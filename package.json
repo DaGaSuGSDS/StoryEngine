@@ -1,0 +1,10 @@
+{
+  "name": "storyenginev2",
+  "private": true,
+  "scripts": {
+    "start:back": "npm start --prefix server",
+	"start:front": "cd public && start start_front.bat",
+	"start": "start npm start --prefix server && cd public && start start_front.bat"
+  }
+}
+
