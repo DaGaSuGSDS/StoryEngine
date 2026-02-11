@@ -17,5 +17,6 @@ module.exports = {
         root: rootDir,
         public: path.join(rootDir, "public"),
         projects: path.join(rootDir, "projects"),
+        templates: path.join(rootDir, "server", "templates"),
     },
 };
