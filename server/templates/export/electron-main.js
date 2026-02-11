@@ -2,7 +2,11 @@ const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs").promises;
 
-// Configuración inyectada durante la exportación
+/**
+ * CONFIGURACIÓN DE EXPORTACIÓN
+ * Este objeto es reemplazado dinámicamente por ExportService.js durante la generación del ZIP.
+ * Contiene los ajustes específicos del proyecto como tamaño de ventana, icono, etc.
+ */
 const EXPORT_CONFIG = {
     width: 1280,
     height: 720,
@@ -11,6 +15,7 @@ const EXPORT_CONFIG = {
 };
 
 function createWindow() {
+    // Resolver ruta del icono si está configurado
     const iconPath = EXPORT_CONFIG.iconFileName
         ? path.join(__dirname, "images", EXPORT_CONFIG.iconFileName)
         : undefined;
@@ -21,15 +26,22 @@ function createWindow() {
         resizable: EXPORT_CONFIG.resizable,
         icon: iconPath,
         webPreferences: {
-            contextIsolation: true,
-            nodeIntegration: false,
-            preload: path.join(__dirname, "preload.js"),
+            contextIsolation: true, // Seguridad: Aísla el contexto de la página del proceso principal
+            nodeIntegration: false, // Seguridad: Deshabilita Node.js en el renderizador
+            preload: path.join(__dirname, "preload.js"), // Script puente seguro
         },
     });
+
+    // Cargar el punto de entrada del juego
     win.loadFile("index.html");
 }
 
-// IPC Handlers for save system
+/* ==========================================================================
+   HANDLERS DE IPC (Inter-Process Communication)
+   Estos métodos son llamados desde el frontend via preload.js para operaciones de sistema.
+   ========================================================================== */
+
+// Guardar partida en disco
 ipcMain.handle("save-game", async (event, filepath, data) => {
     try {
         await fs.writeFile(filepath, data, "utf-8");
@@ -40,6 +52,7 @@ ipcMain.handle("save-game", async (event, filepath, data) => {
     }
 });
 
+// Cargar partida desde disco
 ipcMain.handle("load-game", async (event, filepath) => {
     try {
         const data = await fs.readFile(filepath, "utf-8");
@@ -50,6 +63,7 @@ ipcMain.handle("load-game", async (event, filepath) => {
     }
 });
 
+// Borrar archivo
 ipcMain.handle("delete-file", async (event, filepath) => {
     try {
         await fs.unlink(filepath);
@@ -60,6 +74,7 @@ ipcMain.handle("delete-file", async (event, filepath) => {
     }
 });
 
+// Verificar existencia de archivo
 ipcMain.handle("file-exists", async (event, filepath) => {
     try {
         await fs.access(filepath);
@@ -69,6 +84,7 @@ ipcMain.handle("file-exists", async (event, filepath) => {
     }
 });
 
+// Asegurar que un directorio existe (mkdir -p)
 ipcMain.handle("ensure-dir", async (event, dirpath) => {
     try {
         await fs.mkdir(dirpath, { recursive: true });
@@ -79,11 +95,13 @@ ipcMain.handle("ensure-dir", async (event, dirpath) => {
     }
 });
 
+// Obtener ruta de datos de usuario (AppData/Application Support)
 ipcMain.handle("get-user-data-path", () => {
     return app.getPath("userData");
 });
 
-// Path utilities handlers
+// Utilidades de Rutas (path join/basename/dirname)
+// Necesarias porque 'path' no está disponible directamente en el frontend
 ipcMain.handle("path-join", (event, args) => {
     return path.join(...args);
 });
@@ -96,6 +114,7 @@ ipcMain.handle("path-dirname", (event, p) => {
     return path.dirname(p);
 });
 
+// Ciclo de vida de la aplicación
 app.whenReady().then(() => {
     createWindow();
     app.on("activate", () => {
