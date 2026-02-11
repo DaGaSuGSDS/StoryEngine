@@ -1,9 +1,11 @@
 const fs = require("fs").promises;
 const path = require("path");
 
+const config = require("./config");
+
 // Define la ruta raíz donde se almacenan todos los proyectos.
 // Se ubica en una carpeta "projects" al mismo nivel que la carpeta "server".
-const projectsRoot = path.join(__dirname, "..", "projects");
+const projectsRoot = config.paths.projects;
 
 /**
  * Asegura que un directorio exista, creándolo si es necesario (incluyendo padres).

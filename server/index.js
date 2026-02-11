@@ -3,7 +3,6 @@ const express = require("express");
 const cors = require("cors"); // Middleware para permitir peticiones HTTP desde otros dominios
 const multer = require("multer"); // Middleware para manejar subida de archivos (multipart/form-data)
 const fs = require("fs");
-// const archiver = require("archiver"); // Eliminado, movido a ExportService
 
 // Importamos las funciones de servicio que manejan la lógica de negocio y persistencia
 const {
@@ -20,15 +19,16 @@ const {
 const ExportService = require("./services/ExportService");
 
 const app = express();
-const port = process.env.PORT || 3000;
+const config = require("./config");
+const port = config.port;
 
 // Configuración básica de Express
 app.use(cors());
-app.use(express.json({ limit: "5mb" })); // Aumentamos límite para guardar proyectos grandes
+app.use(express.json(config.bodyParser)); // Aumentamos límite para guardar proyectos grandes
 
 // Definición de directorios estáticos
-const publicDir = path.join(__dirname, "..", "public"); // Archivos del frontend (js, css, html)
-const projectsDir = path.join(__dirname, "..", "projects"); // Carpeta donde se guardan los proyectos de usuario
+const publicDir = config.paths.public; // Archivos del frontend (js, css, html)
+const projectsDir = config.paths.projects; // Carpeta donde se guardan los proyectos de usuario
 
 // Inicializar servicios
 const exportService = new ExportService(publicDir);
@@ -80,84 +80,87 @@ const uploadAudio = multer({ storage: audioStorage });
 // --- ENDPOINTS DE API ---
 
 // Listar todos los proyectos
-app.get("/api/projects", async (req, res) => {
-  try {
-    const projects = await listProjects();
-    res.json(projects);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error listando proyectos");
-  }
-});
+app.get("/api/projects",
+  async (req, res) => {
+    try {
+      const projects = await listProjects();
+      res.json(projects);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Error listando proyectos");
+    }
+  });
 
 // Crear un nuevo proyecto
-app.post("/api/projects", async (req, res) => {
-  try {
-    const body = req.body || {};
-    const name =
-      typeof body.name === "string" && body.name.trim().length > 0
-        ? body.name.trim()
-        : "Proyecto";
-    const project = await createProject(name);
-    res.json(project);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error creando proyecto");
-  }
-});
+app.post("/api/projects",
+  async (req, res) => {
+    try {
+      const body = req.body || {};
+      const name =
+        typeof body.name === "string" && body.name.trim().length > 0
+          ? body.name.trim()
+          : "Proyecto";
+      const project = await createProject(name);
+      res.json(project);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Error creando proyecto");
+    }
+  });
 
 // Cargar un proyecto específico por ID
-app.get("/api/projects/:id", async (req, res) => {
-  try {
-    const project = await loadProject(req.params.id);
-    if (!project) {
-      res.status(404).send("Proyecto no encontrado");
-      return;
+app.get("/api/projects/:id",
+  async (req, res) => {
+    try {
+      const project = await loadProject(req.params.id);
+      if (!project) {
+        res.status(404).send("Proyecto no encontrado");
+        return;
+      }
+      res.json(project);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Error cargando proyecto");
     }
-    res.json(project);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error cargando proyecto");
-  }
-});
+  });
 
 // Guardar/Actualizar un proyecto
-app.put("/api/projects/:id", async (req, res) => {
-  try {
-    const project = req.body;
-    if (!project || typeof project !== "object") {
-      res.status(400).send("Proyecto inválido");
-      return;
+app.put("/api/projects/:id",
+  async (req, res) => {
+    try {
+      const project = req.body;
+      if (!project || typeof project !== "object") {
+        res.status(400).send("Proyecto inválido");
+        return;
+      }
+
+      project.id = req.params.id;
+      project.name =
+        typeof project.name === "string" && project.name.trim().length > 0
+          ? project.name.trim()
+          : project.id;
+      project.scenes = Array.isArray(project.scenes) ? project.scenes : [];
+      project.characters = Array.isArray(project.characters)
+        ? project.characters
+        : [];
+      project.flags = Array.isArray(project.flags) ? project.flags : [];
+      project.images = Array.isArray(project.images) ? project.images : [];
+      project.audio = Array.isArray(project.audio) ? project.audio : [];
+      project.settings =
+        project.settings && typeof project.settings === "object"
+          ? project.settings
+          : {};
+
+      await saveProject(project);
+      res.json({ ok: true });
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Error guardando proyecto");
     }
-
-    project.id = req.params.id;
-    project.name =
-      typeof project.name === "string" && project.name.trim().length > 0
-        ? project.name.trim()
-        : project.id;
-    project.scenes = Array.isArray(project.scenes) ? project.scenes : [];
-    project.characters = Array.isArray(project.characters)
-      ? project.characters
-      : [];
-    project.flags = Array.isArray(project.flags) ? project.flags : [];
-    project.images = Array.isArray(project.images) ? project.images : [];
-    project.audio = Array.isArray(project.audio) ? project.audio : [];
-    project.settings =
-      project.settings && typeof project.settings === "object"
-        ? project.settings
-        : {};
-
-    await saveProject(project);
-    res.json({ ok: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error guardando proyecto");
-  }
-});
+  });
 
 // Subir una imagen a un proyecto
-app.post(
-  "/api/projects/:id/images",
+app.post("/api/projects/:id/images",
   uploadImage.single("image"),
   async (req, res) => {
     try {
@@ -180,19 +183,19 @@ app.post(
 );
 
 // Eliminar una imagen de un proyecto
-app.delete("/api/projects/:id/images/:imageId", async (req, res) => {
-  try {
-    await deleteImageFromProject(req.params.id, req.params.imageId);
-    res.json({ ok: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error eliminando imagen");
-  }
-});
+app.delete("/api/projects/:id/images/:imageId",
+  async (req, res) => {
+    try {
+      await deleteImageFromProject(req.params.id, req.params.imageId);
+      res.json({ ok: true });
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Error eliminando imagen");
+    }
+  });
 
 // Subir un audio a un proyecto
-app.post(
-  "/api/projects/:id/audio",
+app.post("/api/projects/:id/audio",
   uploadAudio.single("audio"),
   async (req, res) => {
     try {
@@ -215,31 +218,33 @@ app.post(
 );
 
 // Eliminar un audio de un proyecto
-app.delete("/api/projects/:id/audio/:audioId", async (req, res) => {
-  try {
-    await deleteAudioFromProject(req.params.id, req.params.audioId);
-    res.json({ ok: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error eliminando audio");
-  }
-});
+app.delete("/api/projects/:id/audio/:audioId",
+  async (req, res) => {
+    try {
+      await deleteAudioFromProject(req.params.id, req.params.audioId);
+      res.json({ ok: true });
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Error eliminando audio");
+    }
+  });
 
 /**
  * EXPORTAR PROYECTO
  * Genera un archivo .zip que contiene el juego completo listo para ejecutarse de forma independiente
  * o con Electron. Empaqueta el JSON del proyecto, los assets, y el runtime necesario.
  */
-app.get("/api/projects/:id/export", async (req, res) => {
-  try {
-    await exportService.exportProject(req.params.id, res);
-  } catch (err) {
-    console.error(err);
-    if (!res.headersSent) {
-      res.status(500).send("Error exportando proyecto");
+app.get("/api/projects/:id/export",
+  async (req, res) => {
+    try {
+      await exportService.exportProject(req.params.id, res);
+    } catch (err) {
+      console.error(err);
+      if (!res.headersSent) {
+        res.status(500).send("Error exportando proyecto");
+      }
     }
-  }
-});
+  });
 
 app.listen(port, () => {
   console.log(`StoryEnginev2 escuchando en http://localhost:${port}`);
