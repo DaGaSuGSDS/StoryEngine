@@ -13,6 +13,80 @@ El programa se divide en dos partes principales:
     *   **Prueba en tiempo real:** Permite jugar la escena actual directamente en el editor.
     *   **Exportación:** Genera un archivo `.zip` con un reproductor HTML/JS independiente que incluye todo el contenido del proyecto listo para publicar.
 
+
+## Estructura del Proyecto
+
+```
+StoryEngine/
+├── server/                 # Backend Node.js/Express
+│   ├── index.js            # Punto de entrada y API
+│   └── package.json        # Dependencias del servidor
+├── public/                 # Frontend
+│   ├── css/                # Estilos
+│   │   ├── main.css        # Estilos generales
+│   │   └── components/     # Estilos por componente
+│   ├── js/                 # Lógica de la aplicación
+│   │   ├── api/            # Comunicación con el backend
+│   │   ├── commands/       # Patrón comando (Undo/Redo)
+│   │   ├── layout/         # Layout principal
+│   │   ├── models/         # Modelos de datos (Node, Scene, etc.)
+│   │   ├── state/          # Gestión de estado (ProjectStore)
+│   │   ├── ui/             # Interfaz de Usuario
+│   │   │   ├── core/       # Clases base (Component)
+│   │   │   ├── graph/      # Componentes del editor de grafos
+│   │   │   ├── tabs/       # Controladores de pestañas
+│   │   │   └── ...
+│   │   └── utils/          # Utilidades generales
+│   └── index.html          # Punto de entrada HTML
+├── projects/               # Datos de proyectos guardados (JSON)
+├── tests/                  # Tests unitarios (Jest)
+└── README.md               # Documentación
+```
+
+## Arquitectura
+
+El sistema sigue una arquitectura cliente-servidor, donde el cliente mantiene el estado de la sesión de edición y el servidor actúa como proveedor de persistencia y recursos.
+
+```mermaid
+graph TD
+    subgraph "Backend (Node.js)"
+        API[Express API]
+        FS[File System]
+        Export[Export Service]
+        
+        API -->|Read/Write| FS
+        API -->|Generate| Export
+    end
+
+    subgraph "Frontend (Vanilla JS)"
+        Store[ProjectStore]
+        Tabs[TabManager]
+        
+        subgraph "UI Components"
+            GraphTab[GraphEditorTab]
+            GraphMgr[GraphInteractionManager]
+            Toolbar[GraphToolbar]
+            Inspector[NodeInspector]
+            Renderer[NodeRenderer]
+        end
+        
+        Store -->|Notify Changes| Tabs
+        Store -->|Notify Changes| GraphTab
+        
+        GraphTab -->|Init| GraphMgr
+        GraphTab -->|Init| Toolbar
+        GraphTab -->|Use| Renderer
+        GraphTab -->|Sync| Inspector
+        
+        GraphMgr -->|Update Selection| Store
+        Toolbar -->|Actions| GraphTab
+    end
+
+    Tabs -->|Manage| GraphTab
+    
+    API <-->|JSON Data| Store
+```
+
 ## Tecnologías Usadas
 
 *   **Backend:**
@@ -22,9 +96,8 @@ El programa se divide en dos partes principales:
     *   [Archiver](https://www.npmjs.com/package/archiver): Generación de archivos ZIP para la exportación.
 *   **Frontend:**
     *   HTML5 / CSS3 (Variables CSS para theming).
-    *   JavaScript (ES Modules) sin frameworks pesados.
-*   **Herramientas:**
-    *   Python (utilizado para levantar un servidor HTTP simple para el frontend en desarrollo).
+    *   JavaScript (ES Modules) con arquitectura basada en Componentes y Observadores.
+    *   [Jest](https://jestjs.io/): Framework de testing.
 
 ## Cómo iniciar el proyecto
 
