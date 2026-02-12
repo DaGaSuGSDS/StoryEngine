@@ -1,0 +1,415 @@
+
+import { KeyboardShortcuts } from "../KeyboardShortcuts.js";
+import { generateId } from "../../utils/idGenerator.js";
+import { escapeHtml } from "../../utils/sanitize.js";
+import { DEFAULT_VALUES } from "../tabs/graphEditor/constants.js";
+import { showInfo, showError } from "../notifications.js";
+import {
+    serializeNode,
+    createNodeFromRaw,
+} from "../../models/nodes/nodeFactory.js";
+import { AddNodeCommand } from "../../commands/AddNodeCommand.js";
+import { DeleteNodeCommand } from "../../commands/DeleteNodeCommand.js";
+import { MultiCommand } from "../../commands/MultiCommand.js";
+
+/**
+ * Manages user interactions on the Graph Canvas.
+ * Handles:
+ * - Selection (single, multi, toggle)
+ * - Clipboard operations (Copy, Cut, Paste, Duplicate)
+ * - Deletion
+ * - Keyboard shortcuts (Delegated to KeyboardShortcuts helper)
+ * - Marquee selection (Box selection)
+ * - Context Menu triggers
+ */
+export class GraphInteractionManager {
+    constructor(projectStore, contextMenuManager, callbacks = {}) {
+        this.projectStore = projectStore;
+        this.contextMenuManager = contextMenuManager;
+        this.callbacks = {
+            onRefresh: () => { },
+            onSelectionChange: () => { },
+            ...callbacks
+        };
+
+        this.selectedNodeIds = new Set();
+        this.selectedNodeId = null;
+        this.clipboard = null;
+        this.keyboardShortcuts = null;
+
+        // Marquee state
+        this.marqueeBox = null;
+        this.marqueeStart = null;
+        this.marqueeLastPoint = null;
+        this.marqueeAdditive = false;
+        this.isMarqueeActive = false;
+
+        // Bind methods for passing as callbacks
+        this.handleNodeSelect = this.handleNodeSelect.bind(this);
+        this.handleNodeContextMenu = this.handleNodeContextMenu.bind(this);
+    }
+
+    init(rootElement, canvasElement) {
+        this.root = rootElement; // Needed for querying .node-card for marquee
+        this.canvas = canvasElement;
+        this.setupKeyboardShortcuts(rootElement);
+        this.setupMarqueeSelection(canvasElement);
+
+        // Global context menu close
+        this.closeMenuHandler = () => this.contextMenuManager.closeContextMenu();
+        document.addEventListener("click", this.closeMenuHandler);
+    }
+
+    destroy() {
+        if (this.keyboardShortcuts) {
+            this.keyboardShortcuts.destroy();
+        }
+        if (this.closeMenuHandler) {
+            document.removeEventListener("click", this.closeMenuHandler);
+        }
+    }
+
+    // --- Selection Management ---
+
+    setSelection(ids = []) {
+        this.selectedNodeIds = new Set(ids.filter(Boolean));
+        this.selectedNodeId = this.getPrimarySelectedId();
+        this.callbacks.onSelectionChange(this.selectedNodeIds);
+        this.callbacks.onRefresh();
+    }
+
+    clearSelection() {
+        this.selectedNodeIds.clear();
+        this.selectedNodeId = null;
+        this.callbacks.onSelectionChange(this.selectedNodeIds);
+        this.callbacks.onRefresh();
+    }
+
+    toggleSelection(nodeId) {
+        if (!nodeId) return;
+        if (this.selectedNodeIds.has(nodeId)) {
+            this.selectedNodeIds.delete(nodeId);
+        } else {
+            this.selectedNodeIds.add(nodeId);
+        }
+        this.selectedNodeId = this.getPrimarySelectedId();
+        this.callbacks.onSelectionChange(this.selectedNodeIds);
+        this.callbacks.onRefresh();
+    }
+
+    getPrimarySelectedId() {
+        const iter = this.selectedNodeIds.values().next();
+        return iter && !iter.done ? iter.value : null;
+    }
+
+    // --- Node Events Handlers ---
+
+    handleNodeSelect(nodeId, event) {
+        if (event && (event.ctrlKey || event.metaKey)) {
+            this.toggleSelection(nodeId);
+        } else {
+            this.setSelection([nodeId]);
+        }
+    }
+
+    handleNodeContextMenu(x, y, nodeId, selectionSet) {
+        const selection =
+            selectionSet instanceof Set ? selectionSet : this.selectedNodeIds;
+        const rightClickOnSelected = selection && selection.has(nodeId);
+        if (!rightClickOnSelected) {
+            this.setSelection([nodeId]);
+        }
+        const idsForMenu = rightClickOnSelected ? Array.from(selection) : [nodeId];
+        this.contextMenuManager.showNodeContextMenu(x, y, nodeId, {
+            selectionIds: idsForMenu,
+        });
+    }
+
+    // --- Actions ---
+
+    copyNode() {
+        if (!this.selectedNodeIds.size) {
+            showError("No hay nodos seleccionados", 2000);
+            return;
+        }
+        const scene = this.projectStore.currentScene;
+        if (!scene) return;
+
+        const serialized = Array.from(this.selectedNodeIds)
+            .map((id) => scene.graph.getNode(id))
+            .filter(Boolean)
+            .map((node) => serializeNode(node));
+        if (!serialized.length) return;
+
+        this.clipboard = { nodes: serialized };
+        const count = serialized.length;
+        showInfo(count === 1 ? "Nodo copiado" : `${count} nodos copiados`, 2000);
+    }
+
+    cutNode() {
+        if (!this.selectedNodeIds.size) {
+            showError("No hay nodos seleccionados", 2000);
+            return;
+        }
+        this.copyNode();
+        this.deleteNode();
+    }
+
+    pasteNode() {
+        const scene = this.projectStore.currentScene;
+        if (!scene) return;
+
+        if (!this.clipboard || !this.clipboard.nodes || !this.clipboard.nodes.length) {
+            showError("Portapapeles vacío", 2000);
+            return;
+        }
+
+        const cloned = this.cloneNodes(this.clipboard.nodes);
+        this.addNodesToScene(scene, cloned);
+        showInfo(`Pegados ${cloned.length} nodos`, 2000);
+    }
+
+    duplicateNode() {
+        if (!this.selectedNodeIds.size) {
+            showError("No hay seleccion", 2000);
+            return;
+        }
+        const scene = this.projectStore.currentScene;
+        if (!scene) return;
+
+        const selectedSerialized = Array.from(this.selectedNodeIds)
+            .map((id) => scene.graph.getNode(id))
+            .filter(Boolean)
+            .map((node) => serializeNode(node));
+
+        if (!selectedSerialized.length) return;
+
+        const cloned = this.cloneNodes(selectedSerialized);
+        this.addNodesToScene(scene, cloned);
+        showInfo(`Duplicados ${cloned.length} nodos`, 2000);
+    }
+
+    deleteNode() {
+        if (!this.selectedNodeIds.size) return;
+        const scene = this.projectStore.currentScene;
+        if (!scene) return;
+
+        const ids = Array.from(this.selectedNodeIds);
+        // Get names for better prompt?
+        // Simplified for now
+        if (!confirm(`¿Eliminar ${ids.length} nodos?`)) return;
+
+        const commands = ids.map((id) => new DeleteNodeCommand(scene, id));
+        this.projectStore.executeCommand(new MultiCommand(commands, `Eliminar ${ids.length} nodos`));
+        this.clearSelection();
+    }
+
+    undo() {
+        if (this.projectStore.undo()) {
+            showInfo("Deshecho", 1000);
+        } else {
+            showError("No hay nada que deshacer", 2000);
+        }
+    }
+
+    redo() {
+        if (this.projectStore.redo()) {
+            showInfo("Rehecho", 1000);
+        } else {
+            showError("No hay nada que rehacer", 2000);
+        }
+    }
+
+    // --- Helpers ---
+
+    cloneNodes(serializedNodes) {
+        const idMap = new Map();
+        const clones = serializedNodes.map((raw) => {
+            const newId = generateId("node");
+            idMap.set(raw.id, newId);
+            return createNodeFromRaw({
+                ...raw,
+                id: newId,
+                name: `${raw.name || raw.type} (copia)`,
+                x: (typeof raw.x === "number" ? raw.x : 0) + DEFAULT_VALUES.DUPLICATE_OFFSET_X,
+                y: (typeof raw.y === "number" ? raw.y : 0) + DEFAULT_VALUES.DUPLICATE_OFFSET_Y,
+            });
+        });
+        clones.forEach((node) => {
+            if (node.nextNodeIds) {
+                node.nextNodeIds = node.nextNodeIds.map(tid => idMap.get(tid) || tid);
+            }
+        });
+        return clones;
+    }
+
+    addNodesToScene(scene, nodes) {
+        const commands = nodes.map(n => new AddNodeCommand(scene, n));
+        const newIds = nodes.map(n => n.id);
+        this.projectStore.executeCommand(new MultiCommand(commands, `Agregar ${nodes.length} nodos`));
+        this.setSelection(newIds);
+    }
+
+    // --- Inputs ---
+
+    setupKeyboardShortcuts(root) {
+        this.keyboardShortcuts = new KeyboardShortcuts(root);
+
+        this.keyboardShortcuts.register("ctrl+c", () => this.copyNode(), "Copiar");
+        this.keyboardShortcuts.register("ctrl+v", () => this.pasteNode(), "Pegar");
+        this.keyboardShortcuts.register("ctrl+x", () => this.cutNode(), "Cortar");
+        this.keyboardShortcuts.register("ctrl+d", () => this.duplicateNode(), "Duplicar");
+        this.keyboardShortcuts.register("delete", () => this.deleteNode(), "Eliminar");
+        this.keyboardShortcuts.register("backspace", () => this.deleteNode(), "Eliminar");
+        this.keyboardShortcuts.register("escape", () => this.clearSelection(), "Deseleccionar");
+        this.keyboardShortcuts.register("ctrl+z", () => this.undo(), "Deshacer");
+        this.keyboardShortcuts.register("ctrl+y", () => this.redo(), "Rehacer");
+        this.keyboardShortcuts.register("ctrl+shift+z", () => this.redo(), "Rehacer");
+
+        this.keyboardShortcuts.enable();
+    }
+
+    // --- Marquee ---
+
+    getCanvasCoordinates(clientX, clientY) {
+        const canvasRect = this.canvas.getBoundingClientRect();
+        return {
+            x: clientX - canvasRect.left + this.canvas.scrollLeft,
+            y: clientY - canvasRect.top + this.canvas.scrollTop,
+        };
+    }
+
+    setupMarqueeSelection(canvas) {
+        if (!canvas) return;
+
+        const onMouseDown = (e) => {
+            // Allow panning or other interactions?
+            // Assuming marquee is default on left click on empty space
+            if (e.button !== 0) return;
+            if (e.target.closest(".node-card")) return;
+
+            this.isMarqueeActive = true;
+            this.marqueeAdditive = e.ctrlKey || e.metaKey;
+
+            this.marqueeStart = this.getCanvasCoordinates(e.clientX, e.clientY);
+            this.marqueeLastPoint = { x: e.clientX, y: e.clientY };
+
+            this.marqueeBox = document.createElement("div");
+            this.marqueeBox.className = "selection-rectangle";
+            canvas.appendChild(this.marqueeBox);
+
+            document.addEventListener("mousemove", onMouseMove);
+            document.addEventListener("mouseup", onMouseUp);
+        };
+
+        const onMouseMove = (e) => {
+            if (!this.isMarqueeActive) return;
+            this.marqueeLastPoint = { x: e.clientX, y: e.clientY };
+            this.updateMarqueeBox(e);
+        };
+
+        const onMouseUp = (e) => {
+            if (!this.isMarqueeActive) return;
+            document.removeEventListener("mousemove", onMouseMove);
+            document.removeEventListener("mouseup", onMouseUp);
+            this.finishMarqueeSelection(e);
+        };
+
+        const onScroll = () => {
+            if (!this.isMarqueeActive || !this.marqueeLastPoint) return;
+            this.updateMarqueeBox({
+                clientX: this.marqueeLastPoint.x,
+                clientY: this.marqueeLastPoint.y
+            });
+        };
+
+        canvas.addEventListener("mousedown", onMouseDown);
+        canvas.addEventListener("scroll", onScroll);
+
+        // Store listeners to remove later if needed (simplified destroy for now)
+    }
+
+    updateMarqueeBox(event) {
+        if (!this.marqueeBox || !this.marqueeStart) return;
+        const current = this.getCanvasCoordinates(event.clientX, event.clientY);
+        const left = Math.min(this.marqueeStart.x, current.x);
+        const top = Math.min(this.marqueeStart.y, current.y);
+        const width = Math.abs(current.x - this.marqueeStart.x);
+        const height = Math.abs(current.y - this.marqueeStart.y);
+
+        Object.assign(this.marqueeBox.style, {
+            left: `${left}px`,
+            top: `${top}px`,
+            width: `${width}px`,
+            height: `${height}px`,
+        });
+    }
+
+    finishMarqueeSelection(event) {
+        this.isMarqueeActive = false;
+        // ... logic to select nodes ...
+        const start =
+            this.marqueeStart ||
+            this.getCanvasCoordinates(event.clientX, event.clientY);
+        const end = this.getCanvasCoordinates(event.clientX, event.clientY);
+        const x1 = Math.min(start.x, end.x);
+        const x2 = Math.max(start.x, end.x);
+        const y1 = Math.min(start.y, end.y);
+        const y2 = Math.max(start.y, end.y);
+
+        if (this.marqueeBox && this.marqueeBox.parentNode) {
+            this.marqueeBox.parentNode.removeChild(this.marqueeBox);
+        }
+        this.marqueeBox = null;
+        this.marqueeStart = null;
+        this.marqueeLastPoint = null;
+
+        const hits = this.collectNodesInCanvasRect(x1, y1, x2, y2);
+
+        if (!hits.length) {
+            if (!this.marqueeAdditive) {
+                this.clearSelection();
+            }
+            return;
+        }
+
+        if (this.marqueeAdditive) {
+            hits.forEach((id) => this.selectedNodeIds.add(id));
+            this.selectedNodeId = this.getPrimarySelectedId();
+            this.callbacks.onSelectionChange(this.selectedNodeIds);
+            this.callbacks.onRefresh();
+        } else {
+            this.setSelection(hits);
+        }
+    }
+
+    collectNodesInCanvasRect(x1, y1, x2, y2) {
+        if (!this.root || !this.canvas) return [];
+        // Assuming nodes are in #graph-nodes
+        const container = this.root.querySelector("#graph-nodes");
+        if (!container) return [];
+
+        const canvasRect = this.canvas.getBoundingClientRect();
+        const nodes = container.querySelectorAll(".node-card");
+        const selected = [];
+
+        nodes.forEach((el) => {
+            const rect = el.getBoundingClientRect();
+            const left = rect.left - canvasRect.left + this.canvas.scrollLeft;
+            const right = rect.right - canvasRect.left + this.canvas.scrollLeft;
+            const top = rect.top - canvasRect.top + this.canvas.scrollTop;
+            const bottom = rect.bottom - canvasRect.top + this.canvas.scrollTop;
+
+            const intersects = !(
+                right < x1 ||
+                left > x2 ||
+                bottom < y1 ||
+                top > y2
+            );
+            if (intersects && el.dataset.nodeId) {
+                selected.push(el.dataset.nodeId);
+            }
+        });
+        return selected;
+    }
+}

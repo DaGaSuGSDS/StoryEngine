@@ -10,6 +10,14 @@ import { CommandHistory } from "../commands/CommandHistory.js";
 import { ImageFolder } from "../models/ImageFolder.js";
 import { createNodeFromRaw } from "../models/nodes/nodeFactory.js";
 
+/**
+ * Central state management for the application.
+ * Uses an Observer pattern to notify subscribers of changes.
+ * Stores:
+ * - Current Project data (Scenes, Characters, etc.)
+ * - Editor State (Current Scene ID)
+ * - Command History (Undo/Redo)
+ */
 export class ProjectStore {
   constructor() {
     this.project = null;
@@ -18,13 +26,19 @@ export class ProjectStore {
     this.commandHistory = new CommandHistory(50);
   }
 
-  subscribe(listener) {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+  subscribe(listener, filter = null) {
+    const entry = { listener, filter };
+    this.listeners.add(entry);
+    return () => this.listeners.delete(entry);
   }
 
-  notify() {
-    this.listeners.forEach((l) => l());
+  notify(changeType = null) {
+    this.listeners.forEach((entry) => {
+      // If no filter on listener, or no specific change type broadcasted, or match
+      if (!entry.filter || !changeType || entry.filter === changeType) {
+        entry.listener(changeType);
+      }
+    });
   }
 
   setProject(rawProject) {

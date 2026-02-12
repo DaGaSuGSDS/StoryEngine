@@ -1,0 +1,27 @@
+(node:33068) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL tests/Component.test.js
+  Component
+    √ should render correctly (3 ms)
+    √ should mount to parent (1 ms)
+    × should cleanup on destroy
+
+  ● Component › should cleanup on destroy
+
+    ReferenceError: jest is not defined
+
+    [0m [90m 30 |[39m         comp[33m.[39mmount(parent)[33m;[39m
+     [90m 31 |[39m
+    [31m[1m>[22m[39m[90m 32 |[39m         [36mconst[39m handler [33m=[39m jest[33m.[39mfn()[33m;[39m
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 33 |[39m         comp[33m.[39maddManagedListener(comp[33m.[39melement[33m,[39m [32m"click"[39m[33m,[39m handler)[33m;[39m
+     [90m 34 |[39m
+     [90m 35 |[39m         comp[33m.[39melement[33m.[39mdispatchEvent([36mnew[39m [33mEvent[39m([32m"click"[39m))[33m;[39m[0m
+
+      at Object.<anonymous> (tests/Component.test.js:32:25)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 2 passed, 3 total
+Snapshots:   0 total
+Time:        0.555 s, estimated 1 s
+Ran all test suites matching tests/Component.test.js.
