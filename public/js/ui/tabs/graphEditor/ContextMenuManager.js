@@ -17,7 +17,8 @@ export class ContextMenuManager {
     onDuplicateNode,
     onDeleteNode,
     onDuplicateMany = null,
-    onDeleteMany = null
+    onDeleteMany = null,
+    onDeleteEdge = null
   ) {
     this.projectStore = projectStore;
     this.onCreateNode = onCreateNode;
@@ -25,6 +26,7 @@ export class ContextMenuManager {
     this.onDeleteNode = onDeleteNode;
     this.onDuplicateMany = onDuplicateMany;
     this.onDeleteMany = onDeleteMany;
+    this.onDeleteEdge = onDeleteEdge;
     this.contextMenu = null;
     this.selectionIds = null;
   }
@@ -119,6 +121,38 @@ export class ContextMenuManager {
         this.onDeleteMany(ids);
       } else {
         this.deleteSingleNode(nodeId);
+      }
+      this.closeContextMenu();
+    });
+    menu.appendChild(deleteItem);
+
+    document.body.appendChild(menu);
+    this.contextMenu = menu;
+
+    const rect = menu.getBoundingClientRect();
+    if (rect.right > window.innerWidth) {
+      menu.style.left = `${x - rect.width}px`;
+    }
+    if (rect.bottom > window.innerHeight) {
+      menu.style.top = `${y - rect.height}px`;
+    }
+  }
+
+  showEdgeContextMenu(x, y, sourceId, targetId) {
+    this.closeContextMenu();
+
+    const menu = document.createElement("div");
+    menu.className = "context-menu";
+    menu.style.left = `${x}px`;
+    menu.style.top = `${y}px`;
+
+    const deleteItem = document.createElement("div");
+    deleteItem.className = "context-menu-item";
+    deleteItem.textContent = "Eliminar Conexión";
+    deleteItem.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (this.onDeleteEdge) {
+        this.onDeleteEdge(sourceId, targetId);
       }
       this.closeContextMenu();
     });

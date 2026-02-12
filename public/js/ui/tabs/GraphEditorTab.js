@@ -40,7 +40,8 @@ export class GraphEditorTab {
       (ids) => {
         this.interactionManager?.setSelection(ids);
         this.interactionManager?.deleteNode();
-      }
+      },
+      () => this.interactionManager?.deleteNode()
     );
 
     // Interaction Manager (Selection, Keyboard, Marquee)
@@ -58,12 +59,20 @@ export class GraphEditorTab {
 
     // Node Renderer
     this.nodeRenderer = new NodeRenderer(
-      projectStore,
-      (id, event) => this.interactionManager.handleNodeSelect(id, event),
-      (x, y, id, selection) => this.interactionManager.handleNodeContextMenu(x, y, id, selection)
-    );
-
-    // Node Inspector
+      this.projectStore,
+      (nodeId, event) =>
+        this.interactionManager.handleNodeSelect(nodeId, event),
+      (x, y, nodeId, selection) =>
+        this.interactionManager.handleNodeContextMenu(
+          x,
+          y,
+          nodeId,
+          selection
+        ),
+      (nodeId, event) => this.interactionManager.startConnectionDrag(nodeId, event),
+      (sourceId, targetId) => this.interactionManager.selectEdge(sourceId, targetId),
+      (x, y, sourceId, targetId) => this.interactionManager.handleEdgeContextMenu(x, y, sourceId, targetId)
+    ); // Node Inspector
     this.nodeInspector = new NodeInspector(projectStore);
 
     // Toolbar (UI)
@@ -258,11 +267,13 @@ export class GraphEditorTab {
     const container = this.root.querySelector("#graph-nodes");
     const scrollParent = this.root.querySelector(".graph-canvas");
 
-    this.nodeRenderer.setDragEnabled(this.dragEnabled);
-    this.nodeRenderer.setSearchMatches(new Set(this.searchMatches));
-    this.nodeRenderer.setSelectedNodeIds(this.interactionManager.selectedNodeIds);
-    this.nodeRenderer.render(container, scrollParent);
-
+    if (this.nodeRenderer) {
+      this.nodeRenderer.setSelectedNodeIds(this.interactionManager.selectedNodeIds);
+      this.nodeRenderer.setSearchMatches(this.interactionManager.searchMatches); // If this property existed directly or via getter
+      // Pass selected edge
+      this.nodeRenderer.setSelectedEdge(this.interactionManager.selectedEdge);
+      this.nodeRenderer.render(container, scrollParent);
+    }
     const primaryId = this.interactionManager.selectedNodeId;
     this.nodeInspector.refresh(primaryId);
 

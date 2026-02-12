@@ -8,10 +8,13 @@ import { escapeHtml } from "../../../utils/sanitize.js";
 import { MoveNodesCommand } from "../../../commands/MoveNodesCommand.js";
 
 export class NodeRenderer {
-  constructor(projectStore, onNodeSelect, onNodeContextMenu) {
+  constructor(projectStore, onNodeSelect, onNodeContextMenu, onConnectionStart, onEdgeSelect, onEdgeContextMenu) {
     this.projectStore = projectStore;
     this.onNodeSelect = onNodeSelect;
     this.onNodeContextMenu = onNodeContextMenu;
+    this.onConnectionStart = onConnectionStart;
+    this.onEdgeSelect = onEdgeSelect;
+    this.onEdgeContextMenu = onEdgeContextMenu;
     this.scrollState = { top: 0, left: 0 };
     this.lastGraphIssuesHash = "";
     this.dragEnabled = false;
@@ -22,6 +25,7 @@ export class NodeRenderer {
     this.lastNodesContainer = null;
     this.lastScene = null;
     this.selectedNodeIds = new Set();
+    this.selectedEdge = null;
   }
 
   render(container, scrollParent) {
@@ -177,6 +181,19 @@ export class NodeRenderer {
       }
     });
 
+    // Connection Port
+    const port = document.createElement("div");
+    port.className = "node-port";
+    port.title = "Arrastra para conectar";
+    port.addEventListener("mousedown", (e) => {
+      e.stopPropagation(); // Prevent drag node
+      e.preventDefault();
+      if (this.onConnectionStart) {
+        this.onConnectionStart(node.id, e);
+      }
+    });
+    div.appendChild(port);
+
     return div;
   }
 
@@ -194,12 +211,35 @@ export class NodeRenderer {
   }
 
   drawEdges(svg, container, scene) {
-    // Elimina líneas previas para evitar duplicados
-    svg.querySelectorAll("line").forEach((line) => line.remove());
+    // 1. Limpieza Robusta: Eliminar solo las líneas de borde y áreas de impacto
+    // Usamos querySelectorAll con las clases que vamos a añadir abajo
+    svg.querySelectorAll(".edge-line, .edge-hit-area").forEach((el) => el.remove());
 
     const graph = scene.graph;
     const svgNS = "http://www.w3.org/2000/svg";
     const containerRect = container.getBoundingClientRect();
+
+    // 2. Asegurar que los marcadores existan (Arrowheads)
+    // Se definen de nuevo por si acaso se borraron accidentalmente
+    if (!svg.querySelector("#arrowhead")) {
+      const defs = svg.querySelector("defs") || document.createElementNS(svgNS, "defs");
+      if (!svg.querySelector("defs")) svg.insertBefore(defs, svg.firstChild);
+
+      const marker = document.createElementNS(svgNS, "marker");
+      marker.setAttribute("id", "arrowhead");
+      marker.setAttribute("markerWidth", "7");
+      marker.setAttribute("markerHeight", "7");
+      marker.setAttribute("refX", "5");
+      marker.setAttribute("refY", "3.5");
+      marker.setAttribute("orient", "auto");
+      marker.setAttribute("viewBox", "0 0 7 7");
+      const markerPath = document.createElementNS(svgNS, "path");
+      markerPath.setAttribute("d", "M 0 0 L 7 3.5 L 0 7 L 0 0 z");
+      markerPath.setAttribute("fill", "#888888");
+      markerPath.setAttribute("stroke", "none");
+      marker.appendChild(markerPath);
+      defs.appendChild(marker);
+    }
 
     graph.nodes.forEach((node) => {
       const fromEl = container.querySelector(
@@ -219,7 +259,52 @@ export class NodeRenderer {
           containerRect
         );
 
+        // Hit area (invisible thicker line for easier clicking)
+        const hitLine = document.createElementNS(svgNS, "line");
+        hitLine.classList.add("edge-hit-area");
+        hitLine.setAttribute("x1", points.x1);
+        hitLine.setAttribute("y1", points.y1);
+        hitLine.setAttribute("x2", points.x2);
+        hitLine.setAttribute("y2", points.y2);
+        // Use nearly transparent, not 'transparent' keyword, and paint it
+        hitLine.setAttribute("stroke", "rgba(255, 0, 0, 0.001)");
+        hitLine.setAttribute("stroke-width", "20"); // Even wider
+        hitLine.setAttribute("fill", "none");
+        hitLine.style.cursor = "pointer";
+        // Explicitly enable pointer events for this element override parent
+        hitLine.style.pointerEvents = "all";
+        hitLine.dataset.source = node.id;
+        hitLine.dataset.target = nextId;
+
+        // Prevent marquee from starting when clicking edge
+        hitLine.addEventListener("mousedown", (e) => {
+          e.preventDefault(); // Also prevent dragging text etc
+          e.stopPropagation();
+        });
+
+        // Event listener for selection
+        hitLine.addEventListener("click", (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          if (this.onEdgeSelect) {
+            this.onEdgeSelect(node.id, nextId);
+          }
+        });
+
+        // Event listener for context menu
+        hitLine.addEventListener("contextmenu", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (this.onEdgeContextMenu) {
+            this.onEdgeContextMenu(e.clientX, e.clientY, node.id, nextId);
+          }
+        });
+
+        svg.appendChild(hitLine);
+
+        // Visible line
         const line = document.createElementNS(svgNS, "line");
+        line.classList.add("edge-line");
         line.setAttribute("x1", points.x1);
         line.setAttribute("y1", points.y1);
         line.setAttribute("x2", points.x2);
@@ -228,9 +313,38 @@ export class NodeRenderer {
         line.setAttribute("stroke-width", "2");
         line.setAttribute("fill", "none");
         line.setAttribute("marker-end", "url(#arrowhead)");
+        line.style.pointerEvents = "none"; // Let clicks pass to hitLine
+
+        // Check if this edge is selected
+        if (this.selectedEdge && this.selectedEdge.sourceId === node.id && this.selectedEdge.targetId === nextId) {
+          line.setAttribute("stroke", "#4CAF50"); // Selected color
+          line.setAttribute("marker-end", "url(#arrowhead-selected)");
+        }
+
         svg.appendChild(line);
       });
     });
+
+    // Ensure selected marker exists
+    if (!svg.querySelector("#arrowhead-selected")) {
+      const defs = svg.querySelector("defs") || document.createElementNS(svgNS, "defs");
+      if (!svg.querySelector("defs")) svg.insertBefore(defs, svg.firstChild);
+
+      const marker = document.createElementNS(svgNS, "marker");
+      marker.setAttribute("id", "arrowhead-selected");
+      marker.setAttribute("markerWidth", "7");
+      marker.setAttribute("markerHeight", "7");
+      marker.setAttribute("refX", "5");
+      marker.setAttribute("refY", "3.5");
+      marker.setAttribute("orient", "auto");
+      marker.setAttribute("viewBox", "0 0 7 7");
+      const markerPath = document.createElementNS(svgNS, "path");
+      markerPath.setAttribute("d", "M 0 0 L 7 3.5 L 0 7 L 0 0 z");
+      markerPath.setAttribute("fill", "#4CAF50");
+      markerPath.setAttribute("stroke", "none");
+      marker.appendChild(markerPath);
+      defs.appendChild(marker);
+    }
   }
 
   showGraphIssues(scene) {
@@ -269,6 +383,10 @@ export class NodeRenderer {
 
   setDragEnabled(enabled) {
     this.dragEnabled = !!enabled;
+  }
+
+  setSelectedEdge(edge) {
+    this.selectedEdge = edge; // { sourceId, targetId } or null
   }
 
   setSearchMatches(matchesSet) {

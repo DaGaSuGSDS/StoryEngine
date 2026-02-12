@@ -10,6 +10,8 @@ import {
 } from "../../models/nodes/nodeFactory.js";
 import { AddNodeCommand } from "../../commands/AddNodeCommand.js";
 import { DeleteNodeCommand } from "../../commands/DeleteNodeCommand.js";
+import { ConnectNodeCommand } from "../../commands/ConnectNodeCommand.js";
+import { DisconnectNodeCommand } from "../../commands/DisconnectNodeCommand.js";
 import { MultiCommand } from "../../commands/MultiCommand.js";
 
 /**
@@ -72,15 +74,26 @@ export class GraphInteractionManager {
     // --- Selection Management ---
 
     setSelection(ids = []) {
+        this.selectedEdge = null; // Clear edge selection when selecting nodes
         this.selectedNodeIds = new Set(ids.filter(Boolean));
         this.selectedNodeId = this.getPrimarySelectedId();
         this.callbacks.onSelectionChange(this.selectedNodeIds);
+        this.callbacks.onRefresh();
+        // Notify edge selection cleared? Renderer handles it via refresh
+    }
+
+    selectEdge(sourceId, targetId) {
+        this.selectedNodeIds.clear(); // Clear node selection
+        this.selectedNodeId = null;
+        this.selectedEdge = { sourceId, targetId };
+        this.callbacks.onSelectionChange(this.selectedNodeIds); // Empty set
         this.callbacks.onRefresh();
     }
 
     clearSelection() {
         this.selectedNodeIds.clear();
         this.selectedNodeId = null;
+        this.selectedEdge = null;
         this.callbacks.onSelectionChange(this.selectedNodeIds);
         this.callbacks.onRefresh();
     }
@@ -112,9 +125,7 @@ export class GraphInteractionManager {
         }
     }
 
-    handleNodeContextMenu(x, y, nodeId, selectionSet) {
-        const selection =
-            selectionSet instanceof Set ? selectionSet : this.selectedNodeIds;
+    handleNodeContextMenu(x, y, nodeId, selection) {
         const rightClickOnSelected = selection && selection.has(nodeId);
         if (!rightClickOnSelected) {
             this.setSelection([nodeId]);
@@ -123,6 +134,12 @@ export class GraphInteractionManager {
         this.contextMenuManager.showNodeContextMenu(x, y, nodeId, {
             selectionIds: idsForMenu,
         });
+    }
+
+    handleEdgeContextMenu(x, y, sourceId, targetId) {
+        // Ensure edge is selected
+        this.selectEdge(sourceId, targetId);
+        this.contextMenuManager.showEdgeContextMenu(x, y, sourceId, targetId);
     }
 
     // --- Actions ---
@@ -190,6 +207,16 @@ export class GraphInteractionManager {
     }
 
     deleteNode() {
+        // Edge deletion
+        if (this.selectedEdge) {
+            const scene = this.projectStore.currentScene;
+            if (!scene) return;
+            const cmd = new DisconnectNodeCommand(scene, this.selectedEdge.sourceId, this.selectedEdge.targetId);
+            this.projectStore.executeCommand(cmd);
+            this.clearSelection();
+            return;
+        }
+
         if (!this.selectedNodeIds.size) return;
         const scene = this.projectStore.currentScene;
         if (!scene) return;
@@ -411,5 +438,99 @@ export class GraphInteractionManager {
             }
         });
         return selected;
+    }
+
+    // --- Connection Creation ---
+
+    startConnectionDrag(nodeId, startEvent) {
+        if (!nodeId || !startEvent) return;
+
+        this.connectionStartNodeId = nodeId;
+        this.connectionLine = document.createElement("div"); // Or SVG line
+        this.connectionLine.className = "connection-drag-line";
+
+        // Use SVG for the drag line
+        const svgNS = "http://www.w3.org/2000/svg";
+        this.dragSvg = document.createElementNS(svgNS, "svg");
+        this.dragSvg.style.position = "absolute";
+        this.dragSvg.style.top = "0";
+        this.dragSvg.style.left = "0";
+        this.dragSvg.style.width = "100%";
+        this.dragSvg.style.height = "100%";
+        this.dragSvg.style.pointerEvents = "none";
+        this.dragSvg.style.zIndex = "999";
+
+        this.dragLine = document.createElementNS(svgNS, "line");
+        this.dragLine.setAttribute("stroke", "#4CAF50");
+        this.dragLine.setAttribute("stroke-width", "2");
+        this.dragLine.setAttribute("stroke-dasharray", "5,5"); // Dashed line
+        this.dragSvg.appendChild(this.dragLine);
+
+        // Append to body or a high-level container to ensure visibility over everything
+        document.body.appendChild(this.dragSvg);
+
+        const scrollParent = this.root.querySelector(".graph-canvas-container"); // Adjust selector if needed
+        const scrollOffset = {
+            x: scrollParent ? scrollParent.scrollLeft : 0,
+            y: scrollParent ? scrollParent.scrollTop : 0
+        };
+
+        // Calculate start point relative to viewport
+        const startRect = startEvent.target.getBoundingClientRect();
+        this.connectionStartPoint = {
+            x: startRect.left + startRect.width / 2,
+            y: startRect.top + startRect.height / 2
+        };
+
+        const onMouseMove = (e) => {
+            this.dragLine.setAttribute("x1", this.connectionStartPoint.x);
+            this.dragLine.setAttribute("y1", this.connectionStartPoint.y);
+            this.dragLine.setAttribute("x2", e.clientX);
+            this.dragLine.setAttribute("y2", e.clientY);
+
+            // Visual feedback on target candidate
+            const target = document.elementFromPoint(e.clientX, e.clientY);
+            const nodeCard = target ? target.closest(".node-card") : null;
+
+            document.querySelectorAll(".node-card.connecting").forEach(el => el.classList.remove("connecting"));
+
+            if (nodeCard && nodeCard.dataset.nodeId && nodeCard.dataset.nodeId !== this.connectionStartNodeId) {
+                nodeCard.classList.add("connecting");
+            }
+        };
+
+        const onMouseUp = (e) => {
+            document.removeEventListener("mousemove", onMouseMove);
+            document.removeEventListener("mouseup", onMouseUp);
+            if (this.dragSvg && this.dragSvg.parentNode) {
+                this.dragSvg.parentNode.removeChild(this.dragSvg);
+            }
+            document.querySelectorAll(".node-card.connecting").forEach(el => el.classList.remove("connecting"));
+
+            const target = document.elementFromPoint(e.clientX, e.clientY);
+            const nodeCard = target ? target.closest(".node-card") : null;
+
+            if (nodeCard && nodeCard.dataset.nodeId && nodeCard.dataset.nodeId !== this.connectionStartNodeId) {
+                this.createConnection(this.connectionStartNodeId, nodeCard.dataset.nodeId);
+            }
+
+            this.connectionStartNodeId = null;
+        };
+
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+    }
+
+    createConnection(sourceId, targetId) {
+        const scene = this.projectStore.currentScene;
+        if (!scene) return;
+
+        const cmd = new ConnectNodeCommand(scene, sourceId, targetId);
+        if (this.projectStore.executeCommand(cmd)) {
+            showInfo("Conexión creada", 1500);
+            this.callbacks.onRefresh();
+        } else {
+            // Already connected or failed
+        }
     }
 }
