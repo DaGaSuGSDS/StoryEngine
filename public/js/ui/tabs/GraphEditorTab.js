@@ -76,7 +76,7 @@ export class GraphEditorTab {
           nodeId,
           selection
         ),
-      (nodeId, event) => this.interactionManager.startConnectionDrag(nodeId, event),
+      (nodeId, event, index) => this.interactionManager.startConnectionDrag(nodeId, event, index),
       (sourceId, targetId) => this.interactionManager.selectEdge(sourceId, targetId),
       (x, y, sourceId, targetId) => this.interactionManager.handleEdgeContextMenu(x, y, sourceId, targetId)
     ); // Node Inspector

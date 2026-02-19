@@ -13,6 +13,7 @@ import { AddNodeCommand } from "../../commands/AddNodeCommand.js";
 import { DeleteNodeCommand } from "../../commands/DeleteNodeCommand.js";
 import { ConnectNodeCommand } from "../../commands/ConnectNodeCommand.js";
 import { DisconnectNodeCommand } from "../../commands/DisconnectNodeCommand.js";
+import { ReplaceConnectionCommand } from "../../commands/ReplaceConnectionCommand.js";
 import { MultiCommand } from "../../commands/MultiCommand.js";
 
 /**
@@ -558,12 +559,19 @@ export class GraphInteractionManager {
 
     /**
      * Starts dragging a connection line.
+     * Also stores the source index if provided (for replacement).
      * @param {string} nodeId
-     * @param {Event} startEvent
+     * @param {Event} event
+     * @param {number} [index] - Index of the connection source (optional)
      */
-    startConnectionDrag(nodeId, startEvent) {
-        if (!nodeId || !startEvent) return;
-
+    startConnectionDrag(nodeId, event, index) {
+        this.connectionSourceId = nodeId;
+        this.connectionSourceIndex = index !== undefined ? index : -1;
+        this.isConnecting = true;
+        // ... rest of logic (visual feedback) is handled by NodeRenderer? 
+        // Actually NodeRenderer likely handles the drag visual itself or delegates back.
+        // Wait, NodeRenderer draws the temp line? Yes, it usually tracks mouse move.
+        // But we need to store state here.
         this.connectionStartNodeId = nodeId;
         this.connectionLine = document.createElement("div"); // Or SVG line
         this.connectionLine.className = "connection-drag-line";
@@ -595,7 +603,7 @@ export class GraphInteractionManager {
         };
 
         // Calculate start point relative to viewport
-        const startRect = startEvent.target.getBoundingClientRect();
+        const startRect = event.target.getBoundingClientRect();
         this.connectionStartPoint = {
             x: startRect.left + startRect.width / 2,
             y: startRect.top + startRect.height / 2
@@ -634,6 +642,9 @@ export class GraphInteractionManager {
             }
 
             this.connectionStartNodeId = null;
+            this.connectionSourceId = null;
+            this.connectionSourceIndex = -1;
+            this.isConnecting = false;
         };
 
         document.addEventListener("mousemove", onMouseMove);
@@ -659,9 +670,19 @@ export class GraphInteractionManager {
 
         let cmdToExecute;
 
-        // If limit is 1 and we already have a connection, replace it
-        if (maxOutputs === 1 && currentOutputs >= 1) {
-            const existingTargetId = sourceNode.nextNodeIds.find(id => id !== null);
+        // SPECIFIC INDEX REPLACEMENT (User Request)
+        // If we started dragging from a specific connection index (the dot), replace that connection.
+        if (this.connectionSourceIndex !== -1 && this.connectionSourceIndex !== undefined) {
+            cmdToExecute = new ReplaceConnectionCommand(
+                scene,
+                sourceId,
+                this.connectionSourceIndex,
+                targetId
+            );
+        }
+        // If limit is 1, always replace existing connection (Legacy/Fallback for main port)
+        else if (maxOutputs === 1) {
+            const existingTargetId = sourceNode.nextNodeIds ? sourceNode.nextNodeIds.find(id => id !== null) : null;
             if (existingTargetId) {
                 // disconnecting existing...
                 const disconnectCmd = new DisconnectNodeCommand(scene, sourceId, existingTargetId);

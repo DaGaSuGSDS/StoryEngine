@@ -311,7 +311,7 @@ export class NodeRenderer {
         }
       }
 
-      (node.nextNodeIds || []).forEach((nextId) => {
+      (node.nextNodeIds || []).forEach((nextId, index) => {
         const toEl = container.querySelector(
           `.node-card[data-node-id="${nextId}"]`
         );
@@ -342,7 +342,14 @@ export class NodeRenderer {
           e.stopPropagation();
           e.preventDefault();
           if (this.onConnectionStart) {
-            this.onConnectionStart(node.id, e);
+            // Pass the index of the connection we are dragging from (for replacement)
+            // We need to find the index of 'nextId' in node.nextNodeIds
+            // Note: node.nextNodeIds might contain nulls, so we need exact index.
+            // But wait, we are iterating node.nextNodeIds. So we can just use the loop index?
+            // The loop is: (node.nextNodeIds || []).forEach((nextId) => { ...
+            // But forEach doesn't give index if we don't ask for it.
+            // Let's change the loop signature.
+            this.onConnectionStart(node.id, e, index);
           }
         });
 
