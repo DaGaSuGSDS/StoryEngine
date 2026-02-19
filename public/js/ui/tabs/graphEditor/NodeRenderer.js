@@ -298,6 +298,18 @@ export class NodeRenderer {
       }
 
       const maxOutputs = getMaxOutputs(node.type);
+      const currentOutputs = (node.nextNodeIds || []).filter((id) => id !== null).length;
+
+      // Logic for main port visibility:
+      // Show if unlimited outputs OR current outputs < max outputs
+      // Hide if limit reached (user should use edge dots to modify existing)
+      if (port) {
+        if (maxOutputs !== Infinity && currentOutputs >= maxOutputs) {
+          port.style.display = "none";
+        } else {
+          port.style.display = ""; // Reset to CSS default (flex/block)
+        }
+      }
 
       (node.nextNodeIds || []).forEach((nextId) => {
         const toEl = container.querySelector(
@@ -319,11 +331,21 @@ export class NodeRenderer {
         // Main port always stays fixed.
         const dot = document.createElement("div");
         dot.className = "node-port edge-origin-dot";
+        dot.title = "Arrastra para conectar";
         dot.style.position = "absolute";
         dot.style.left = `${relX}px`;
         dot.style.top = `${relY}px`;
         dot.style.transform = "translate(-50%, -50%)";
-        dot.style.pointerEvents = "none"; // Visual only
+        dot.style.cursor = "crosshair"; // Indicate actionable
+
+        dot.addEventListener("mousedown", (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          if (this.onConnectionStart) {
+            this.onConnectionStart(node.id, e);
+          }
+        });
+
         fromEl.appendChild(dot);
 
         // Hit area (invisible thicker line for easier clicking)
