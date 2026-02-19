@@ -1393,3 +1393,19 @@ body.no-scroll {
     border-color: #4CAF50;
     box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
 }
+
+/* Labels for edges (Conditional/Options) */
+.edge-label {
+  position: absolute;
+  background-color: rgba(30, 30, 30, 0.85);
+  color: #ccc;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  pointer-events: none; /* Let clicks pass through to edge/canvas */
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  border: 1px solid #444;
+  z-index: 2; /* Above edges (z-index 0/1) but below nodes (z-index 1 -> actually nodes usually higher) */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}

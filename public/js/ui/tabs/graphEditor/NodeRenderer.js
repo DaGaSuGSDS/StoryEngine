@@ -251,6 +251,7 @@ export class NodeRenderer {
     // 1. Limpieza Robusta: Eliminar solo las líneas de borde y áreas de impacto
     // Usamos querySelectorAll con las clases que vamos a añadir abajo
     svg.querySelectorAll(".edge-line, .edge-hit-area").forEach((el) => el.remove());
+    container.querySelectorAll(".edge-label").forEach((el) => el.remove());
 
     const graph = scene.graph;
     const svgNS = "http://www.w3.org/2000/svg";
@@ -418,6 +419,41 @@ export class NodeRenderer {
         }
 
         svg.appendChild(line);
+
+        // --- Edge Label (User Request) ---
+        let labelText = null;
+        if (node.type === NODE_TYPES.CONDITIONAL || node.type === NODE_TYPES.FLAG_TEST) {
+          labelText = index === 0 ? "Verdadero" : "Falso";
+        } else if (node.type === NODE_TYPES.PLAYER_OPTIONS) {
+          const optText = (node.options && node.options[index]) ? node.options[index] : `Opción ${index + 1}`;
+          labelText = optText.length > 20 ? optText.substring(0, 17) + "..." : optText;
+        }
+
+        if (labelText) {
+          const labelDiv = document.createElement("div");
+          labelDiv.className = "edge-label";
+          labelDiv.textContent = labelText;
+
+          // Position near source (25% along the path)
+          // Points are relative to svg/container (which matches containerRect if scrolled?)
+          // Actually points are computed relative to containerRect's top-left.
+          // But container is usually relative positioned.
+          // Let's verify computeEdgePoints returns.
+          // x1, y1 are relative to container top-left (fx = fromRect.left - containerRect.left...)
+
+          // But wait, computeEdgePoints uses containerRect.
+          // And NodeRenderer appends SVG to container.
+          // So coordinates are aligned with container.
+
+          const t = 0.5; // 50% from source (center)
+          const lx = points.x1 + (points.x2 - points.x1) * t;
+          const ly = points.y1 + (points.y2 - points.y1) * t;
+
+          labelDiv.style.left = `${lx}px`;
+          labelDiv.style.top = `${ly}px`;
+
+          container.appendChild(labelDiv);
+        }
       });
     });
 
