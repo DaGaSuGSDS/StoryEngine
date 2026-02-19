@@ -1,3 +1,10 @@
+/**
+ * nodeTypes.js
+ * Definitions of node types and helper functions for node classification.
+ */
+/**
+ * Enum of all available node types.
+ */
 export const NODE_TYPES = {
   DIALOGUE: "dialogue",
   PLAYER_OPTIONS: "playerOptions",
@@ -15,6 +22,9 @@ export const NODE_TYPES = {
   BASE: "base",
 };
 
+/**
+ * Order of node types for UI display or processing.
+ */
 export const ORDERED_NODE_TYPES = [
   NODE_TYPES.DIALOGUE,
   NODE_TYPES.PLAYER_OPTIONS,
@@ -31,6 +41,11 @@ export const ORDERED_NODE_TYPES = [
   NODE_TYPES.SCENE_CHANGE,
 ];
 
+/**
+ * Checks if a node type is considered a "logic" node.
+ * @param {string} type - Node type.
+ * @returns {boolean} True if logic node.
+ */
 export function isLogicNodeType(type) {
   return (
     type === NODE_TYPES.SET_FLAG ||

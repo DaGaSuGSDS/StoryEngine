@@ -1,3 +1,7 @@
+/**
+ * Main entry point for the application.
+ * Initializes the UI, ProjectStore, and StoryEngine.
+ */
 import { TabManager } from "./ui/TabManager.js";
 import { ProjectStore } from "./state/ProjectStore.js";
 import { ApiClient } from "./api/ApiClient.js";
@@ -10,10 +14,12 @@ import { SettingsTab } from "./ui/tabs/SettingsTab.js";
 import { StoryEngine } from "./runtime/StoryEngine.js";
 import { showError, showInfo } from "./ui/notifications.js";
 
+// --- Global Instances ---
 const apiClient = new ApiClient("http://localhost:3000/api");
 const projectStore = new ProjectStore();
 const storyEngine = new StoryEngine(projectStore, apiClient);
 
+// --- DOM Elements ---
 const projectSelect = document.getElementById("project-select");
 const projectNewBtn = document.getElementById("project-new");
 const projectLoadBtn = document.getElementById("project-load");
@@ -23,6 +29,7 @@ const playSceneBtn = document.getElementById("play-scene");
 const playOverlay = document.getElementById("play-overlay");
 const playCloseBtn = document.getElementById("play-close");
 
+// --- Tab Manager Initialization ---
 const tabManager = new TabManager(document.getElementById("tab-content"), {
   graph: new GraphEditorTab(projectStore),
   characters: new CharactersTab(projectStore, apiClient),
@@ -32,6 +39,11 @@ const tabManager = new TabManager(document.getElementById("tab-content"), {
   settings: new SettingsTab(projectStore, apiClient),
 });
 
+/**
+ * Updates the project selection dropdown.
+ * @param {Array} projects - List of available projects.
+ * @param {string} currentId - ID of the currently selected project.
+ */
 function refreshProjectSelect(projects, currentId) {
   projectSelect.innerHTML = "";
   const placeholder = document.createElement("option");
@@ -51,6 +63,10 @@ function refreshProjectSelect(projects, currentId) {
   }
 }
 
+/**
+ * Fetches and displays the list of projects.
+ * @returns {Promise<void>}
+ */
 async function loadProjectsList() {
   try {
     const projects = await apiClient.listProjects();
@@ -61,6 +77,11 @@ async function loadProjectsList() {
   }
 }
 
+/**
+ * Handles the creation of a new project.
+ * Prompts user for a name, creates it via API, and loads it.
+ * @returns {Promise<void>}
+ */
 async function handleCreateProject() {
   const name = window.prompt("Nombre del nuevo proyecto:");
   if (!name) return;
@@ -75,6 +96,10 @@ async function handleCreateProject() {
   }
 }
 
+/**
+ * Handles loading a selected project.
+ * @returns {Promise<void>}
+ */
 async function handleLoadProject() {
   const id = projectSelect.value;
   if (!id) {
@@ -91,6 +116,10 @@ async function handleLoadProject() {
   }
 }
 
+/**
+ * Handles saving the current project.
+ * @returns {Promise<void>}
+ */
 async function handleSaveProject() {
   if (!projectStore.project) {
     showError("No hay proyecto cargado.");
@@ -105,12 +134,18 @@ async function handleSaveProject() {
   }
 }
 
+/**
+ * Refreshes the UI to reflect the current loaded project.
+ */
 function refreshCurrentProject() {
   tabManager.refreshAll();
   applyWindowPreferencesToEditor();
   updateFaviconFromProject();
 }
 
+/**
+ * Initializes the tab navigation system.
+ */
 function initTabs() {
   const buttons = document.querySelectorAll(".tab-button");
   buttons.forEach((btn) => {
@@ -124,6 +159,9 @@ function initTabs() {
   tabManager.show("graph");
 }
 
+/**
+ * Initializes the scene playback overlay.
+ */
 function initPlayOverlay() {
   playCloseBtn.addEventListener("click", () => {
     playOverlay.classList.add("hidden");
@@ -147,6 +185,9 @@ function initPlayOverlay() {
   });
 }
 
+/**
+ * Initializes the top toolbar buttons.
+ */
 function initTopBar() {
   projectNewBtn.addEventListener("click", handleCreateProject);
   projectLoadBtn.addEventListener("click", handleLoadProject);
@@ -154,6 +195,11 @@ function initTopBar() {
   projectExportBtn.addEventListener("click", handleExportProject);
 }
 
+/**
+ * Handles exporting the project as a ZIP file.
+ * Saves the project first.
+ * @returns {Promise<void>}
+ */
 async function handleExportProject() {
   if (!projectStore.project) {
     showError("No hay proyecto cargado.");
@@ -180,6 +226,10 @@ async function handleExportProject() {
   window.location.href = url;
 }
 
+/**
+ * Bootstraps the application.
+ * @returns {Promise<void>}
+ */
 async function bootstrap() {
   initTabs();
   initTopBar();
@@ -190,6 +240,9 @@ async function bootstrap() {
 
 bootstrap();
 
+/**
+ * Applies project-specific window preferences to the editor overlay.
+ */
 function applyWindowPreferencesToEditor() {
   const settings = projectStore.project?.settings;
   const overlayContent = document.querySelector(".overlay-content");
@@ -229,6 +282,9 @@ function applyWindowPreferencesToEditor() {
     settings.resizable !== false ? "both" : "none";
 }
 
+/**
+ * Updates the browser favicon based on the project settings.
+ */
 function updateFaviconFromProject() {
   const settings = projectStore.project?.settings;
   const images = projectStore.project?.images || [];

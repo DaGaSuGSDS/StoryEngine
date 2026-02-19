@@ -25,6 +25,11 @@ import { MultiCommand } from "../../commands/MultiCommand.js";
  * - Context Menu triggers
  */
 export class GraphInteractionManager {
+    /**
+     * @param {Object} projectStore
+     * @param {Object} contextMenuManager
+     * @param {Object} callbacks
+     */
     constructor(projectStore, contextMenuManager, callbacks = {}) {
         this.projectStore = projectStore;
         this.contextMenuManager = contextMenuManager;
@@ -51,6 +56,11 @@ export class GraphInteractionManager {
         this.handleNodeContextMenu = this.handleNodeContextMenu.bind(this);
     }
 
+    /**
+     * Initializes the interaction manager.
+     * @param {HTMLElement} rootElement
+     * @param {HTMLElement} canvasElement
+     */
     init(rootElement, canvasElement) {
         this.root = rootElement; // Needed for querying .node-card for marquee
         this.canvas = canvasElement;
@@ -62,6 +72,9 @@ export class GraphInteractionManager {
         document.addEventListener("click", this.closeMenuHandler);
     }
 
+    /**
+     * Cleans up listeners.
+     */
     destroy() {
         if (this.keyboardShortcuts) {
             this.keyboardShortcuts.destroy();
@@ -73,6 +86,10 @@ export class GraphInteractionManager {
 
     // --- Selection Management ---
 
+    /**
+     * Sets the current selection.
+     * @param {Array<string>} ids
+     */
     setSelection(ids = []) {
         this.selectedEdge = null; // Clear edge selection when selecting nodes
         this.selectedNodeIds = new Set(ids.filter(Boolean));
@@ -82,6 +99,11 @@ export class GraphInteractionManager {
         // Notify edge selection cleared? Renderer handles it via refresh
     }
 
+    /**
+     * Selects an edge.
+     * @param {string} sourceId
+     * @param {string} targetId
+     */
     selectEdge(sourceId, targetId) {
         this.selectedNodeIds.clear(); // Clear node selection
         this.selectedNodeId = null;
@@ -90,6 +112,9 @@ export class GraphInteractionManager {
         this.callbacks.onRefresh();
     }
 
+    /**
+     * Clears all selection.
+     */
     clearSelection() {
         this.selectedNodeIds.clear();
         this.selectedNodeId = null;
@@ -98,6 +123,10 @@ export class GraphInteractionManager {
         this.callbacks.onRefresh();
     }
 
+    /**
+     * Toggles selection state of a node.
+     * @param {string} nodeId
+     */
     toggleSelection(nodeId) {
         if (!nodeId) return;
         if (this.selectedNodeIds.has(nodeId)) {
@@ -110,6 +139,10 @@ export class GraphInteractionManager {
         this.callbacks.onRefresh();
     }
 
+    /**
+     * Gets the primary selected node ID.
+     * @returns {string|null}
+     */
     getPrimarySelectedId() {
         const iter = this.selectedNodeIds.values().next();
         return iter && !iter.done ? iter.value : null;
@@ -117,6 +150,11 @@ export class GraphInteractionManager {
 
     // --- Node Events Handlers ---
 
+    /**
+     * Handles node selection event.
+     * @param {string} nodeId
+     * @param {Event} event
+     */
     handleNodeSelect(nodeId, event) {
         if (event && (event.ctrlKey || event.metaKey)) {
             this.toggleSelection(nodeId);
@@ -125,6 +163,13 @@ export class GraphInteractionManager {
         }
     }
 
+    /**
+     * Handles node context menu event.
+     * @param {number} x
+     * @param {number} y
+     * @param {string} nodeId
+     * @param {Set} selection
+     */
     handleNodeContextMenu(x, y, nodeId, selection) {
         const rightClickOnSelected = selection && selection.has(nodeId);
         if (!rightClickOnSelected) {
@@ -136,6 +181,13 @@ export class GraphInteractionManager {
         });
     }
 
+    /**
+     * Handles edge context menu event.
+     * @param {number} x
+     * @param {number} y
+     * @param {string} sourceId
+     * @param {string} targetId
+     */
     handleEdgeContextMenu(x, y, sourceId, targetId) {
         // Ensure edge is selected
         this.selectEdge(sourceId, targetId);
@@ -144,6 +196,9 @@ export class GraphInteractionManager {
 
     // --- Actions ---
 
+    /**
+     * Copies selected nodes to clipboard.
+     */
     copyNode() {
         if (!this.selectedNodeIds.size) {
             showError("No hay nodos seleccionados", 2000);
@@ -163,6 +218,9 @@ export class GraphInteractionManager {
         showInfo(count === 1 ? "Nodo copiado" : `${count} nodos copiados`, 2000);
     }
 
+    /**
+     * Cuts selected nodes to clipboard.
+     */
     cutNode() {
         if (!this.selectedNodeIds.size) {
             showError("No hay nodos seleccionados", 2000);
@@ -172,6 +230,9 @@ export class GraphInteractionManager {
         this.deleteNode();
     }
 
+    /**
+     * Pastes nodes from clipboard.
+     */
     pasteNode() {
         const scene = this.projectStore.currentScene;
         if (!scene) return;
@@ -186,6 +247,9 @@ export class GraphInteractionManager {
         showInfo(`Pegados ${cloned.length} nodos`, 2000);
     }
 
+    /**
+     * Duplicates selected nodes.
+     */
     duplicateNode() {
         if (!this.selectedNodeIds.size) {
             showError("No hay seleccion", 2000);
@@ -206,6 +270,9 @@ export class GraphInteractionManager {
         showInfo(`Duplicados ${cloned.length} nodos`, 2000);
     }
 
+    /**
+     * Deletes selected nodes or edge.
+     */
     deleteNode() {
         // Edge deletion
         if (this.selectedEdge) {
@@ -231,6 +298,9 @@ export class GraphInteractionManager {
         this.clearSelection();
     }
 
+    /**
+     * Undoes last action.
+     */
     undo() {
         if (this.projectStore.undo()) {
             showInfo("Deshecho", 1000);
@@ -239,6 +309,9 @@ export class GraphInteractionManager {
         }
     }
 
+    /**
+     * Redoes last undone action.
+     */
     redo() {
         if (this.projectStore.redo()) {
             showInfo("Rehecho", 1000);
@@ -249,6 +322,11 @@ export class GraphInteractionManager {
 
     // --- Helpers ---
 
+    /**
+     * Clones serialized nodes with new IDs.
+     * @param {Array<Object>} serializedNodes
+     * @returns {Array<Object>}
+     */
     cloneNodes(serializedNodes) {
         const idMap = new Map();
         const clones = serializedNodes.map((raw) => {
@@ -270,6 +348,11 @@ export class GraphInteractionManager {
         return clones;
     }
 
+    /**
+     * Adds nodes to the scene command.
+     * @param {Scene} scene
+     * @param {Array<Object>} nodes
+     */
     addNodesToScene(scene, nodes) {
         const commands = nodes.map(n => new AddNodeCommand(scene, n));
         const newIds = nodes.map(n => n.id);
@@ -279,6 +362,10 @@ export class GraphInteractionManager {
 
     // --- Inputs ---
 
+    /**
+     * Sets up keyboard shortcuts.
+     * @param {HTMLElement} root
+     */
     setupKeyboardShortcuts(root) {
         this.keyboardShortcuts = new KeyboardShortcuts(root);
 
@@ -298,6 +385,12 @@ export class GraphInteractionManager {
 
     // --- Marquee ---
 
+    /**
+     * Converts client coordinates to canvas coordinates.
+     * @param {number} clientX
+     * @param {number} clientY
+     * @returns {{x: number, y: number}}
+     */
     getCanvasCoordinates(clientX, clientY) {
         const canvasRect = this.canvas.getBoundingClientRect();
         return {
@@ -306,6 +399,10 @@ export class GraphInteractionManager {
         };
     }
 
+    /**
+     * Sets up marquee selection events.
+     * @param {HTMLElement} canvas
+     */
     setupMarqueeSelection(canvas) {
         if (!canvas) return;
 
@@ -356,6 +453,10 @@ export class GraphInteractionManager {
         // Store listeners to remove later if needed (simplified destroy for now)
     }
 
+    /**
+     * Updates the marquee selection box.
+     * @param {Event} event
+     */
     updateMarqueeBox(event) {
         if (!this.marqueeBox || !this.marqueeStart) return;
         const current = this.getCanvasCoordinates(event.clientX, event.clientY);
@@ -372,6 +473,10 @@ export class GraphInteractionManager {
         });
     }
 
+    /**
+     * Finalizes marquee selection.
+     * @param {Event} event
+     */
     finishMarqueeSelection(event) {
         this.isMarqueeActive = false;
         // ... logic to select nodes ...
@@ -410,6 +515,14 @@ export class GraphInteractionManager {
         }
     }
 
+    /**
+     * Finds nodes intersecting with the selection rectangle.
+     * @param {number} x1
+     * @param {number} y1
+     * @param {number} x2
+     * @param {number} y2
+     * @returns {Array<string>} Array of node IDs.
+     */
     collectNodesInCanvasRect(x1, y1, x2, y2) {
         if (!this.root || !this.canvas) return [];
         // Assuming nodes are in #graph-nodes
@@ -442,6 +555,11 @@ export class GraphInteractionManager {
 
     // --- Connection Creation ---
 
+    /**
+     * Starts dragging a connection line.
+     * @param {string} nodeId
+     * @param {Event} startEvent
+     */
     startConnectionDrag(nodeId, startEvent) {
         if (!nodeId || !startEvent) return;
 
@@ -521,6 +639,11 @@ export class GraphInteractionManager {
         document.addEventListener("mouseup", onMouseUp);
     }
 
+    /**
+     * Creates a connection between two nodes.
+     * @param {string} sourceId
+     * @param {string} targetId
+     */
     createConnection(sourceId, targetId) {
         const scene = this.projectStore.currentScene;
         if (!scene) return;

@@ -6,6 +6,14 @@ import { dom } from "../uiHelpers.js";
  * Manages buttons for drag/drop, auto-layout, and search functionality.
  */
 export class GraphToolbar extends Component {
+    /**
+     * @param {Object} props - Component properties.
+     * @param {Function} [props.onToggleDrag] - Callback for drag toggle.
+     * @param {Function} [props.onAutoLayout] - Callback for auto layout.
+     * @param {Function} [props.onSearch] - Callback for search input.
+     * @param {Function} [props.onNextMatch] - Callback for next match.
+     * @param {Function} [props.onClearSearch] - Callback for clear search.
+     */
     constructor(props = {}) {
         super(props);
         this.state = {
@@ -22,6 +30,10 @@ export class GraphToolbar extends Component {
         this.onClearSearch = props.onClearSearch || (() => { });
     }
 
+    /**
+     * Updates the drag enabled state in UI.
+     * @param {boolean} enabled
+     */
     setDragEnabled(enabled) {
         this.state.dragEnabled = enabled;
         if (this.dragToggleBtn) {
@@ -31,6 +43,10 @@ export class GraphToolbar extends Component {
         }
     }
 
+    /**
+     * Renders the toolbar.
+     * @returns {HTMLElement}
+     */
     render() {
         this.toggleBtn = dom("button", {
             id: "graph-tools-toggle",
@@ -102,6 +118,9 @@ export class GraphToolbar extends Component {
         return container;
     }
 
+    /**
+     * Toggles the toolbar expansion.
+     */
     togglePanel() {
         this.state.expanded = !this.state.expanded;
         if (this.state.expanded) {

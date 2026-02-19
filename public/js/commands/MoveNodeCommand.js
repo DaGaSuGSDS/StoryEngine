@@ -1,6 +1,19 @@
+/**
+ * MoveNodeCommand.js
+ * Command to move a single node to a new position.
+ */
 import { Command } from "./Command.js";
 
+/**
+ * Command to move a single node.
+ */
 export class MoveNodeCommand extends Command {
+  /**
+   * @param {Scene} scene - Target scene.
+   * @param {string} nodeId - ID of node to move.
+   * @param {number} newX - New X position.
+   * @param {number} newY - New Y position.
+   */
   constructor(scene, nodeId, newX, newY) {
     super();
     this.scene = scene;
@@ -11,6 +24,9 @@ export class MoveNodeCommand extends Command {
     this.oldY = null;
   }
 
+  /**
+   * Updates node position.
+   */
   execute() {
     const node = this.scene.graph.getNode(this.nodeId);
     if (!node) {
@@ -26,6 +42,9 @@ export class MoveNodeCommand extends Command {
     return true;
   }
 
+  /**
+   * Reverts node position.
+   */
   undo() {
     const node = this.scene.graph.getNode(this.nodeId);
     if (!node) {
@@ -38,6 +57,9 @@ export class MoveNodeCommand extends Command {
     return true;
   }
 
+  /**
+   * @returns {string} Description.
+   */
   description() {
     return `Mover nodo a (${this.newX}, ${this.newY})`;
   }

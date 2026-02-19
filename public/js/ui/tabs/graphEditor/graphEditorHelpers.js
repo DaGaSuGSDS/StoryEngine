@@ -1,6 +1,20 @@
 import { createSelectField } from "../../uiHelpers.js";
+/**
+ * graphEditorHelpers.js
+ * Utility functions for coordinate conversion and graph interactions.
+ */
 import { escapeHtml } from "../../../utils/sanitize.js";
 
+/**
+ * Creates a linked selector for character and its state.
+ * @param {HTMLElement} container
+ * @param {Object} node
+ * @param {Object} projectStore
+ * @param {string} characterIdKey
+ * @param {string} stateKey
+ * @param {string} label
+ * @returns {Object} { charSelect, stateSelect, fillStateOptions }
+ */
 export function createCharacterStateSelector(
   container,
   node,

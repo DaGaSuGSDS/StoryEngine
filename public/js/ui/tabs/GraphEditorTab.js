@@ -1,3 +1,7 @@
+/**
+ * GraphEditorTab.js
+ * Main UI component for the node graph editor.
+ */
 import { ScenePanel } from "./graphEditor/ScenePanel.js";
 import { NodeRenderer } from "./graphEditor/NodeRenderer.js";
 import { NodeInspector } from "./graphEditor/NodeInspector.js";
@@ -15,6 +19,9 @@ import { GraphInteractionManager } from "../graph/GraphInteractionManager.js";
  * - InteractionManager (Input handling)
  */
 export class GraphEditorTab {
+  /**
+   * @param {Object} projectStore - The project store instance.
+   */
   constructor(projectStore) {
     this.projectStore = projectStore;
     this.root = null;
@@ -104,6 +111,10 @@ export class GraphEditorTab {
     this.resizeTimeout = null;
   }
 
+  /**
+   * Renders the tab content.
+   * @returns {HTMLElement}
+   */
   render() {
     if (!this.unsubscribe) {
       this.unsubscribe = this.projectStore.subscribe(() => this.refresh());
@@ -172,12 +183,19 @@ export class GraphEditorTab {
 
   // --- Search Logic (Simplified) ---
 
+  /**
+   * Handles search input.
+   * @param {string} query
+   */
   handleSearch(query) {
     this.searchQuery = query || "";
     this.searchIndex = -1;
     this.refresh();
   }
 
+  /**
+   * Updates the list of search matches.
+   */
   updateSearchMatches() {
     const scene = this.projectStore.currentScene;
     if (!scene || !this.searchQuery.trim()) {
@@ -201,6 +219,9 @@ export class GraphEditorTab {
     }
   }
 
+  /**
+   * Selects the next match in search results.
+   */
   handleNextMatch() {
     if (!this.searchMatches.length) return;
     this.searchIndex = (this.searchIndex + 1) % this.searchMatches.length;
@@ -210,6 +231,9 @@ export class GraphEditorTab {
     this.refresh();
   }
 
+  /**
+   * Clears the search.
+   */
   handleClearSearch() {
     this.searchQuery = "";
     this.searchMatches = [];
@@ -219,6 +243,11 @@ export class GraphEditorTab {
 
   // --- Scroll Logic ---
 
+  /**
+   * Scrolls to a specific node.
+   * @param {string} nodeId
+   * @param {HTMLElement} scrollParent
+   */
   scrollToNode(nodeId, scrollParent) {
     const el = this.root.querySelector(`.node-card[data-node-id="${nodeId}"]`);
     if (!el) return;
@@ -235,6 +264,10 @@ export class GraphEditorTab {
 
   // --- Panel/LifeCycle ---
 
+  /**
+   * Handles node selection from the scene panel.
+   * @param {string} nodeId
+   */
   handleSceneSelect(nodeId) { // This is actually scene ID or StartNode Node ID?
     // In original code: handleSceneSelect(nodeId) -> setSelection([nodeId])
     // ScenePanel calls this when a node in the scene tree is clicked.
@@ -246,6 +279,9 @@ export class GraphEditorTab {
     this.refresh();
   }
 
+  /**
+   * Refreshes the UI.
+   */
   refresh() {
     if (!this.root) return;
 
@@ -283,6 +319,10 @@ export class GraphEditorTab {
     }
   }
 
+  /**
+   * Sets up resize observer for the canvas.
+   * @param {HTMLElement} canvas
+   */
   setupResizeObserver(canvas) {
     if (!canvas || this.resizeObserver) return;
     if (typeof ResizeObserver === "undefined") {
@@ -299,11 +339,17 @@ export class GraphEditorTab {
     this.resizeObserver.observe(canvas);
   }
 
+  /**
+   * Schedules a refresh (debounced).
+   */
   scheduleRefresh() {
     if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
     this.resizeTimeout = setTimeout(() => this.refresh(), 60);
   }
 
+  /**
+   * Cleans up.
+   */
   destroy() {
     if (this.unsubscribe) {
       this.unsubscribe();

@@ -1,6 +1,18 @@
+/**
+ * DisconnectNodeCommand.js
+ * Command to remove a connection (edge) between two nodes.
+ */
 import { Command } from "./Command.js";
 
+/**
+ * Command to disconnect two nodes.
+ */
 export class DisconnectNodeCommand extends Command {
+    /**
+     * @param {Scene} scene - Target scene.
+     * @param {string} sourceId - Source node ID.
+     * @param {string} targetId - Target node ID.
+     */
     constructor(scene, sourceId, targetId) {
         super();
         this.scene = scene;
@@ -9,6 +21,9 @@ export class DisconnectNodeCommand extends Command {
         this.index = -1;
     }
 
+    /**
+     * Removes the connection.
+     */
     execute() {
         const sourceNode = this.scene.graph.getNode(this.sourceId);
         if (!sourceNode || !sourceNode.nextNodeIds) return false;
@@ -20,6 +35,9 @@ export class DisconnectNodeCommand extends Command {
         return true;
     }
 
+    /**
+     * Restores the connection.
+     */
     undo() {
         const sourceNode = this.scene.graph.getNode(this.sourceId);
         if (!sourceNode) return false;
@@ -35,6 +53,9 @@ export class DisconnectNodeCommand extends Command {
         return true;
     }
 
+    /**
+     * @returns {string} Description.
+     */
     description() {
         return `Desconectar nodo ${this.sourceId} de ${this.targetId}`;
     }

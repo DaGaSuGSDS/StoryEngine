@@ -1,6 +1,18 @@
+/**
+ * ConnectNodeCommand.js
+ * Command to create a connection (edge) between two nodes.
+ */
 import { Command } from "./Command.js";
 
+/**
+ * Command to connect two nodes.
+ */
 export class ConnectNodeCommand extends Command {
+    /**
+     * @param {Scene} scene - Target scene.
+     * @param {string} sourceId - Source node ID.
+     * @param {string} targetId - Target node ID.
+     */
     constructor(scene, sourceId, targetId) {
         super();
         this.scene = scene;
@@ -9,6 +21,9 @@ export class ConnectNodeCommand extends Command {
         this.alreadyconnected = false;
     }
 
+    /**
+     * Creates the connection.
+     */
     execute() {
         const sourceNode = this.scene.graph.getNode(this.sourceId);
         const targetNode = this.scene.graph.getNode(this.targetId);
@@ -28,6 +43,9 @@ export class ConnectNodeCommand extends Command {
         return true;
     }
 
+    /**
+     * Removes the connection.
+     */
     undo() {
         if (this.alreadyconnected) return true;
 
@@ -41,6 +59,9 @@ export class ConnectNodeCommand extends Command {
         return true;
     }
 
+    /**
+     * @returns {string} Description.
+     */
     description() {
         return `Conectar nodo ${this.sourceId} a ${this.targetId}`;
     }

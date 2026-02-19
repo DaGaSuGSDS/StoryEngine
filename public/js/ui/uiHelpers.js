@@ -40,6 +40,22 @@ export function dom(tag, attrs = {}, children = []) {
   return el;
 }
 
+/**
+ * uiHelpers.js
+ * Collection of utility functions for UI manipulation and element creation.
+ */
+/**
+ * Creates a labeled input field.
+ * @param {Object} options
+ * @param {HTMLElement} [options.container] - Parent to append to.
+ * @param {string} options.label - Label text.
+ * @param {string} options.id - Input ID.
+ * @param {string} [options.value] - Initial value.
+ * @param {string} [options.type] - Input type.
+ * @param {string} [options.placeholder] - Placeholder text.
+ * @param {Function} [options.onChange] - Input event handler.
+ * @returns {HTMLInputElement} The input element.
+ */
 export function createLabeledInput({
   container,
   label,
@@ -65,6 +81,19 @@ export function createLabeledInput({
   return div.querySelector("input");
 }
 
+/**
+ * Creates a labeled select field.
+ * @param {Object} options
+ * @param {HTMLElement} [options.container] - Parent to append to.
+ * @param {string} options.label - Label text.
+ * @param {string} options.id - Select ID.
+ * @param {Array<{value: string, label: string}>} options.options - Select options.
+ * @param {string} [options.value] - Selected value.
+ * @param {boolean} [options.allowEmpty] - Add empty option.
+ * @param {string} [options.emptyLabel] - Label for empty option.
+ * @param {Function} [options.onChange] - Change event handler.
+ * @returns {HTMLSelectElement} The select element.
+ */
 export function createSelectField({
   container,
   label,

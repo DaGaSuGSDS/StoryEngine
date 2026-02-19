@@ -1,16 +1,27 @@
 import { PANEL_WIDTHS } from "./constants.js";
-import { ORDERED_NODE_TYPES } from "../../../models/nodes/nodeTypes.js";
+/**
+ * NodeInspector.js
+ * Component for editing properties of the selected node.
+ */
+import { NODE_TYPES, ORDERED_NODE_TYPES, isLogicNodeType } from "../../../models/nodes/nodeTypes.js";
 import { escapeHtml } from "../../../utils/sanitize.js";
 import { renderNodeTypeFields } from "./nodeFieldRenderers.js";
 import { renderNextSelectors } from "./nextSelectorRenderer.js";
 import { convertNodeType } from "./nodeTypeConverter.js";
 
 export class NodeInspector {
+  /**
+   * @param {Object} projectStore
+   */
   constructor(projectStore) {
     this.projectStore = projectStore;
     this.root = null;
   }
 
+  /**
+   * Renders the inspector panel.
+   * @returns {HTMLElement}
+   */
   render() {
     this.root = document.createElement("div");
     this.root.className = "panel panel-right";
@@ -26,6 +37,10 @@ export class NodeInspector {
     return this.root;
   }
 
+  /**
+   * Renders the content based on selection.
+   * @param {string|null} selectedNodeId
+   */
   renderContent(selectedNodeId) {
     const inspector = this.root.querySelector("#inspector-content");
     if (!inspector) return;
@@ -44,6 +59,11 @@ export class NodeInspector {
     }
   }
 
+  /**
+   * Renders inspector for scene properties.
+   * @param {HTMLElement} inspector
+   * @param {Object} scene
+   */
   renderSceneInspector(inspector, scene) {
     const sceneDiv = document.createElement("div");
     const nameSection = document.createElement("div");
@@ -119,6 +139,12 @@ export class NodeInspector {
     });
   }
 
+  /**
+   * Renders inspector for a specific node.
+   * @param {HTMLElement} inspector
+   * @param {Object} scene
+   * @param {string} selectedNodeId
+   */
   renderNodeInspector(inspector, scene, selectedNodeId) {
     const node = scene.graph.getNode(selectedNodeId);
     if (!node) return;
@@ -196,6 +222,10 @@ export class NodeInspector {
     renderNextSelectors(node, nextContainer, scene, this.projectStore);
   }
 
+  /**
+   * Refreshes the inspector content.
+   * @param {string|null} selectedNodeId
+   */
   refresh(selectedNodeId) {
     this.renderContent(selectedNodeId);
   }

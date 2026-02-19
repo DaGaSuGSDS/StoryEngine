@@ -1,3 +1,7 @@
+/**
+ * startScreenSection.js
+ * Renders settings for the game's start/title screen.
+ */
 export const START_SCREEN_INPUT_IDS = [
   "start-screen-image",
   "start-screen-prompt",
@@ -9,6 +13,12 @@ export const START_SCREEN_INPUT_IDS = [
   "start-screen-vertical",
 ];
 
+/**
+ * Renders the settings section for the Start/Title Screen.
+ * @param {Object} settings - Current project settings.
+ * @param {string} imageOptionsHtml - HTML options for background image selection.
+ * @returns {string} HTML string.
+ */
 export function renderStartScreenSection(settings, imageOptionsHtml) {
   return `
     <section class="settings-section" data-section="start-screen">
@@ -41,29 +51,23 @@ export function renderStartScreenSection(settings, imageOptionsHtml) {
           <div class="form-group">
             <label>Posición horizontal</label>
             <select id="start-screen-align">
-              <option value="left" ${
-                settings.startScreenTextAlign === "left" ? "selected" : ""
-              }>Izquierda</option>
-              <option value="center" ${
-                settings.startScreenTextAlign === "center" ? "selected" : ""
-              }>Centro</option>
-              <option value="right" ${
-                settings.startScreenTextAlign === "right" ? "selected" : ""
-              }>Derecha</option>
+              <option value="left" ${settings.startScreenTextAlign === "left" ? "selected" : ""
+    }>Izquierda</option>
+              <option value="center" ${settings.startScreenTextAlign === "center" ? "selected" : ""
+    }>Centro</option>
+              <option value="right" ${settings.startScreenTextAlign === "right" ? "selected" : ""
+    }>Derecha</option>
             </select>
           </div>
           <div class="form-group">
             <label>Posición vertical</label>
             <select id="start-screen-vertical">
-              <option value="top" ${
-                settings.startScreenTextVertical === "top" ? "selected" : ""
-              }>Arriba</option>
-              <option value="center" ${
-                settings.startScreenTextVertical === "center" ? "selected" : ""
-              }>Centro</option>
-              <option value="bottom" ${
-                settings.startScreenTextVertical === "bottom" ? "selected" : ""
-              }>Abajo</option>
+              <option value="top" ${settings.startScreenTextVertical === "top" ? "selected" : ""
+    }>Arriba</option>
+              <option value="center" ${settings.startScreenTextVertical === "center" ? "selected" : ""
+    }>Centro</option>
+              <option value="bottom" ${settings.startScreenTextVertical === "bottom" ? "selected" : ""
+    }>Abajo</option>
             </select>
           </div>
         </div>
@@ -121,12 +125,10 @@ export function renderStartScreenSection(settings, imageOptionsHtml) {
           <div class="start-preview__bg"></div>
           <div class="start-preview__overlay"></div>
           <div class="start-preview__content">
-            <div class="start-preview__title">${
-              settings.gameTitle || "StoryEngine"
-            }</div>
-            <div class="start-preview__prompt">${
-              settings.startScreenPrompt || ""
-            }</div>
+            <div class="start-preview__title">${settings.gameTitle || "StoryEngine"
+    }</div>
+            <div class="start-preview__prompt">${settings.startScreenPrompt || ""
+    }</div>
           </div>
         </div>
       </div>
@@ -134,6 +136,12 @@ export function renderStartScreenSection(settings, imageOptionsHtml) {
   `;
 }
 
+/**
+ * Updates the live preview of the Start Screen.
+ * Handles background image loading/fallback and text positioning.
+ * @param {HTMLElement} container - The settings tab container.
+ * @param {Object} context - Helper context containing image resolver and settings.
+ */
 export function updateStartScreenPreview(
   container,
   { resolveImageUrl, fallbackImageUrl, settings }
@@ -212,6 +220,7 @@ export function updateStartScreenPreview(
 
   const imageSelect = container.querySelector("#start-screen-image");
   const iconSelect = container.querySelector("#game-icon");
+
   const selectedId = imageSelect
     ? imageSelect.value
     : settings.startScreenImageId;

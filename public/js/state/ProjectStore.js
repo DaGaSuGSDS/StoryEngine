@@ -1,3 +1,7 @@
+/**
+ * ProjectStore.js
+ * Central state management for the application.
+ */
 import { Scene } from "../models/Scene.js";
 import { Character } from "../models/Character.js";
 import { Flag } from "../models/Flag.js";
@@ -19,6 +23,9 @@ import { createNodeFromRaw } from "../models/nodes/nodeFactory.js";
  * - Command History (Undo/Redo)
  */
 export class ProjectStore {
+  /**
+   * Initializes the store with empty state.
+   */
   constructor() {
     this.project = null;
     this.currentSceneId = null;
@@ -26,12 +33,22 @@ export class ProjectStore {
     this.commandHistory = new CommandHistory(50);
   }
 
+  /**
+   * Subscribes a listener to state changes.
+   * @param {Function} listener - Callback function invoked on change.
+   * @param {string|null} filter - Optional filter to only receive specific updates.
+   * @returns {Function} Unsubscribe function.
+   */
   subscribe(listener, filter = null) {
     const entry = { listener, filter };
     this.listeners.add(entry);
     return () => this.listeners.delete(entry);
   }
 
+  /**
+   * Notifies all subscribers of a change.
+   * @param {string|null} changeType - Type of change that occurred.
+   */
   notify(changeType = null) {
     this.listeners.forEach((entry) => {
       // If no filter on listener, or no specific change type broadcasted, or match
@@ -41,6 +58,10 @@ export class ProjectStore {
     });
   }
 
+  /**
+   * Loads a project into the store, deserializing all models.
+   * @param {Object} rawProject - The raw project data from JSON.
+   */
   setProject(rawProject) {
     if (!rawProject) {
       this.project = null;
@@ -81,6 +102,10 @@ export class ProjectStore {
     this.notify();
   }
 
+  /**
+   * Serializes the current project state to JSON.
+   * @returns {Object|null} Raw project object or null if no project loaded.
+   */
   toJSON() {
     if (!this.project) return null;
     return {
@@ -132,6 +157,10 @@ export class ProjectStore {
     this.notify();
   }
 
+  /**
+   * Creates and adds a new scene to the project.
+   * Automatically sets it as the current scene.
+   */
   addScene() {
     if (!this.project) return;
     const id = generateId("scene");
@@ -228,11 +257,16 @@ export class ProjectStore {
     this.notify();
   }
 
+  /**
+   * Deletes an image folder and moves its contents to the root.
+   * @param {string} folderId - ID of the folder to delete.
+   */
   deleteImageFolder(folderId) {
     if (!this.project || !this.project.imageFolders) return;
     const folders = this.project.imageFolders;
     const images = this.project.images || [];
 
+    // Identify all folders to delete (the target folder and its subfolders)
     const collectIds = new Set();
     const stack = [folderId];
     while (stack.length > 0) {
@@ -244,13 +278,14 @@ export class ProjectStore {
         .forEach((child) => stack.push(child.id));
     }
 
-    // Mover imágenes de esas carpetas a raíz
+    // Move images from deleted folders to root (null folderId)
     images.forEach((img) => {
       if (img.folderId && collectIds.has(img.folderId)) {
         img.folderId = null;
       }
     });
 
+    // Remove the folders from state
     this.project.imageFolders = folders.filter((f) => !collectIds.has(f.id));
     this.notify();
   }
@@ -305,6 +340,11 @@ export class ProjectStore {
     this.notify();
   }
 
+  /**
+   * Executes a command via the CommandHistory for undo/redo support.
+   * @param {Command} command - The command object to execute.
+   * @returns {boolean} True if execution was successful.
+   */
   executeCommand(command) {
     const success = this.commandHistory.execute(command);
     if (success) {

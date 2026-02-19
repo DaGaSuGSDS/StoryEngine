@@ -1,7 +1,16 @@
 import { showError, showInfo } from "../notifications.js";
 import { generateId } from "../../utils/idGenerator.js";
+/**
+ * ImagesTab.js
+ * UI component for managing image assets and folders.
+ */
+import { ImageFolder } from "../../models/ImageFolder.js";
 
 export class ImagesTab {
+  /**
+   * @param {Object} projectStore
+   * @param {Object} apiClient
+   */
   constructor(projectStore, apiClient) {
     this.projectStore = projectStore;
     this.apiClient = apiClient;
@@ -13,6 +22,10 @@ export class ImagesTab {
     this.unsubscribe = this.projectStore.subscribe(() => this.refresh());
   }
 
+  /**
+   * Renders the tab.
+   * @returns {HTMLElement}
+   */
   render() {
     if (!this.unsubscribe) {
       this.unsubscribe = this.projectStore.subscribe(() => this.refresh());
@@ -66,6 +79,11 @@ export class ImagesTab {
     return this.root;
   }
 
+  /**
+   * Creates a new folder.
+   * @param {string|null} parentId
+   * @returns {Object|null}
+   */
   createFolderAt(parentId) {
     if (!this.projectStore.project) {
       showError("Carga o crea un proyecto primero.");
@@ -91,6 +109,9 @@ export class ImagesTab {
     return null;
   }
 
+  /**
+   * Closes the context menu.
+   */
   closeContextMenu() {
     if (this.contextMenu) {
       this.contextMenu.remove();
@@ -98,6 +119,10 @@ export class ImagesTab {
     }
   }
 
+  /**
+   * Attaches lifecycle to context menu.
+   * @param {HTMLElement} menu
+   */
   attachContextMenuLifecycle(menu) {
     document.body.appendChild(menu);
     this.contextMenu = menu;
@@ -121,6 +146,12 @@ export class ImagesTab {
     document.addEventListener("contextmenu", onClickOutside);
   }
 
+  /**
+   * Shows context menu for a folder.
+   * @param {number} x
+   * @param {number} y
+   * @param {Object} folder
+   */
   showFolderContextMenu(x, y, folder) {
     this.closeContextMenu();
 
@@ -196,6 +227,11 @@ export class ImagesTab {
     this.attachContextMenuLifecycle(menu);
   }
 
+  /**
+   * Shows context menu for empty area.
+   * @param {number} x
+   * @param {number} y
+   */
   showEmptyAreaContextMenu(x, y) {
     this.closeContextMenu();
 
@@ -217,6 +253,11 @@ export class ImagesTab {
     this.attachContextMenuLifecycle(menu);
   }
 
+  /**
+   * Moves image to a folder.
+   * @param {Object} img
+   * @param {string|null} folderId
+   */
   setImageFolderForImage(img, folderId) {
     const finalId = folderId || null;
     if (this.projectStore.setImageFolderForImage) {
@@ -227,6 +268,14 @@ export class ImagesTab {
     }
   }
 
+  /**
+   * Shows context menu for an image.
+   * @param {number} x
+   * @param {number} y
+   * @param {Object} img
+   * @param {Array} folderOptions
+   * @param {string} imageUrl
+   */
   showImageContextMenu(x, y, img, folderOptions, imageUrl) {
     this.closeContextMenu();
 
@@ -284,6 +333,11 @@ export class ImagesTab {
     this.attachContextMenuLifecycle(menu);
   }
 
+  /**
+   * Opens image preview modal.
+   * @param {string} imageUrl
+   * @param {string} name
+   */
   openImagePreview(imageUrl, name) {
     const overlay = document.createElement("div");
     overlay.className = "overlay";
@@ -329,6 +383,9 @@ export class ImagesTab {
     document.body.appendChild(overlay);
   }
 
+  /**
+   * Handles image upload.
+   */
   async handleUpload() {
     if (!this.projectStore.project) {
       showError("Carga o crea un proyecto primero.");
@@ -367,6 +424,9 @@ export class ImagesTab {
     }
   }
 
+  /**
+   * Refreshes the gallery view.
+   */
   refresh() {
     if (!this.root || !this.root.isConnected) return;
     const grid = this.root.querySelector("#image-grid");
@@ -536,6 +596,9 @@ export class ImagesTab {
       });
   }
 
+  /**
+   * Cleans up.
+   */
   destroy() {
     this.closeContextMenu();
     if (this.globalContextMenuHandler) {

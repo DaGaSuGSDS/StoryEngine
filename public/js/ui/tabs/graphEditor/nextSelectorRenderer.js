@@ -1,5 +1,12 @@
 import { NODE_TYPES } from "../../../models/nodes/nodeTypes.js";
 
+/**
+ * Renders selectors for next nodes.
+ * @param {Object} node
+ * @param {HTMLElement} container
+ * @param {Object} scene
+ * @param {Object} projectStore
+ */
 export function renderNextSelectors(node, container, scene, projectStore) {
   container.innerHTML = "";
   if (!scene) return;
@@ -66,6 +73,15 @@ export function renderNextSelectors(node, container, scene, projectStore) {
   }
 }
 
+/**
+ * Helper to create a select for a next node.
+ * @param {HTMLElement} container
+ * @param {Object} node
+ * @param {Array} nodeOptions
+ * @param {string} label
+ * @param {number} index
+ * @param {Object} projectStore
+ */
 function createNextSelect(
   container,
   node,
@@ -101,6 +117,13 @@ function createNextSelect(
   container.appendChild(div);
 }
 
+/**
+ * Renders next selectors for PlayerOptions node.
+ * @param {Object} node
+ * @param {HTMLElement} container
+ * @param {Array} nodeOptions
+ * @param {Object} projectStore
+ */
 function renderPlayerOptionsNextSelectors(
   node,
   container,
@@ -178,6 +201,13 @@ function renderPlayerOptionsNextSelectors(
   container.appendChild(addDiv);
 }
 
+/**
+ * Renders next selectors for Random node.
+ * @param {Object} node
+ * @param {HTMLElement} container
+ * @param {Array} nodeOptions
+ * @param {Object} projectStore
+ */
 function renderRandomNextSelectors(node, container, nodeOptions, projectStore) {
   if (!Array.isArray(node.nextNodeIds)) node.nextNodeIds = [];
 

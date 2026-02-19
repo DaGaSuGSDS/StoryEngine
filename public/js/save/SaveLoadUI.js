@@ -1,7 +1,15 @@
 /**
+ * SaveLoadUI.js
+ * UI component for managing save slots and load operations.
+ */
+/**
  * SaveLoadUI - Interfaz de usuario para guardar y cargar partidas
  */
 export class SaveLoadUI {
+  /**
+   * @param {Object} saveManager
+   * @param {Object} storyEngine
+   */
   constructor(saveManager, storyEngine) {
     this.saveManager = saveManager;
     this.storyEngine = storyEngine;
@@ -65,6 +73,9 @@ export class SaveLoadUI {
   /**
    * Crea la estructura del modal
    */
+  /**
+   * Creates the modal structure.
+   */
   createModal() {
     this.modal = document.createElement("div");
     this.modal.className = "save-load-overlay";
@@ -81,11 +92,10 @@ export class SaveLoadUI {
       <div class="save-load-modal">
         <div class="save-load-header">
           <h2>${title}</h2>
-          ${
-            showCloseBtn
-              ? '<button class="btn small close-btn" type="button">&times;</button>'
-              : ""
-          }
+          ${showCloseBtn
+        ? '<button class="btn small close-btn" type="button">&times;</button>'
+        : ""
+      }
         </div>
         <div class="save-load-content">
           <div id="save-slots-container" class="save-slots-container"></div>
@@ -141,6 +151,11 @@ export class SaveLoadUI {
   /**
    * Crea el elemento visual de un slot
    */
+  /**
+   * Creates the visual element for a slot.
+   * @param {Object} save
+   * @returns {HTMLElement}
+   */
   createSlotElement(save) {
     const slot = document.createElement("div");
     slot.className = "save-slot";
@@ -156,11 +171,10 @@ export class SaveLoadUI {
           <p class="save-slot-empty">Vacío</p>
         </div>
         <div class="save-slot-actions">
-          ${
-            this.mode === "select-slot"
-              ? ""
-              : `<button class="btn small" disabled>Vacío</button>`
-          }
+          ${this.mode === "select-slot"
+          ? ""
+          : `<button class="btn small" disabled>Vacío</button>`
+        }
         </div>
       `;
     } else {
@@ -172,11 +186,10 @@ export class SaveLoadUI {
         <div class="save-slot-body">
           <p class="save-slot-scene">${save.scenePreview}</p>
           <p class="save-slot-time">Tiempo: ${save.playTime}</p>
-          ${
-            forceNewGame
-              ? '<p class="save-slot-warning">Este slot será sobrescrito al empezar una nueva partida.</p>'
-              : ""
-          }
+          ${forceNewGame
+          ? '<p class="save-slot-warning">Este slot será sobrescrito al empezar una nueva partida.</p>'
+          : ""
+        }
         </div>
         <div class="save-slot-actions">
           <button class="btn small delete-btn" data-slot="${save.slotNumber}">Borrar</button>
@@ -223,6 +236,11 @@ export class SaveLoadUI {
   /**
    * Maneja la selección de un slot
    */
+  /**
+   * Handles slot selection.
+   * @param {number} slotNumber
+   * @param {boolean} hasExistingSave
+   */
   async handleSlotSelection(slotNumber, hasExistingSave) {
     const forceNewGame = this.forceNewGameSelection && this.mode === "select-slot";
 
@@ -265,6 +283,10 @@ export class SaveLoadUI {
   /**
    * Maneja la carga de un slot
    */
+  /**
+   * Handles loading from a slot.
+   * @param {number} slotNumber
+   */
   async handleLoad(slotNumber) {
     try {
       const gameState = await this.saveManager.loadGame(slotNumber);
@@ -291,6 +313,10 @@ export class SaveLoadUI {
   /**
    * Maneja la eliminación de un guardado
    */
+  /**
+   * Handles deleting a save.
+   * @param {number} slotNumber
+   */
   async handleDelete(slotNumber) {
     if (!confirm("¿Estás seguro de que quieres borrar este guardado?")) {
       return;
@@ -309,12 +335,20 @@ export class SaveLoadUI {
   /**
    * Muestra un mensaje de error
    */
+  /**
+   * Shows an error message.
+   * @param {string} message
+   */
   showError(message) {
     alert(message); // TODO: Reemplazar con un sistema de notificaciones mejor
   }
 
   /**
    * Muestra un mensaje de éxito
+   */
+  /**
+   * Shows a success message.
+   * @param {string} message
    */
   showSuccess(message) {
     console.log(message); // TODO: Reemplazar con un sistema de notificaciones mejor

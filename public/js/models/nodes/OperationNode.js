@@ -1,7 +1,21 @@
+/**
+ * OperationNode.js
+ * Node for performing arithmetic operations on character variables.
+ */
 import { BaseNode } from "./BaseNode.js";
 import { NODE_TYPES } from "./nodeTypes.js";
 
+/**
+ * Node for performing operations on variables.
+ */
 export class OperationNode extends BaseNode {
+  /**
+   * @param {Object} data - Node data.
+   * @param {string} [data.characterId] - Character ID owning variable.
+   * @param {string} [data.variableName] - Variable name.
+   * @param {string} [data.operation] - Operation (=, +=, -=, etc).
+   * @param {any} [data.value] - Value to operate with.
+   */
   constructor({
     id,
     name,

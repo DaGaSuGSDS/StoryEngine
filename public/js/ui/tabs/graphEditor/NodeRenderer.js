@@ -1,3 +1,7 @@
+/**
+ * NodeRenderer.js
+ * Component responsible for drawing nodes and edges on the canvas.
+ */
 import {
   NODE_TYPES,
   isLogicNodeType,
@@ -8,6 +12,14 @@ import { escapeHtml } from "../../../utils/sanitize.js";
 import { MoveNodesCommand } from "../../../commands/MoveNodesCommand.js";
 
 export class NodeRenderer {
+  /**
+   * @param {Object} projectStore
+   * @param {Function} onNodeSelect
+   * @param {Function} onNodeContextMenu
+   * @param {Function} onConnectionStart
+   * @param {Function} onEdgeSelect
+   * @param {Function} onEdgeContextMenu
+   */
   constructor(projectStore, onNodeSelect, onNodeContextMenu, onConnectionStart, onEdgeSelect, onEdgeContextMenu) {
     this.projectStore = projectStore;
     this.onNodeSelect = onNodeSelect;
@@ -28,6 +40,11 @@ export class NodeRenderer {
     this.selectedEdge = null;
   }
 
+  /**
+   * Renders the graph.
+   * @param {HTMLElement} container
+   * @param {HTMLElement} scrollParent
+   */
   render(container, scrollParent) {
     if (!container) return;
 
@@ -113,6 +130,14 @@ export class NodeRenderer {
     }
   }
 
+  /**
+   * Creates a DOM element for a node.
+   * @param {Object} node
+   * @param {Object} graph
+   * @param {HTMLElement} container
+   * @param {HTMLElement} scrollParent
+   * @returns {HTMLElement}
+   */
   createNodeElement(node, graph, container, scrollParent) {
     const div = document.createElement("div");
     div.className = "node-card";
@@ -197,6 +222,11 @@ export class NodeRenderer {
     return div;
   }
 
+  /**
+   * Gets the CSS class for a node type tag.
+   * @param {string} type
+   * @returns {string}
+   */
   getTypeTagClass(type) {
     if (type === NODE_TYPES.DIALOGUE) return "tag-dialogue";
     if (type === NODE_TYPES.ANIMATION) return "tag-animation";
@@ -210,6 +240,12 @@ export class NodeRenderer {
     return "";
   }
 
+  /**
+   * Draws edges between nodes.
+   * @param {SVGElement} svg
+   * @param {HTMLElement} container
+   * @param {Object} scene
+   */
   drawEdges(svg, container, scene) {
     // 1. Limpieza Robusta: Eliminar solo las líneas de borde y áreas de impacto
     // Usamos querySelectorAll con las clases que vamos a añadir abajo
@@ -347,6 +383,10 @@ export class NodeRenderer {
     }
   }
 
+  /**
+   * Checks for graph issues (e.g. missing connection targets).
+   * @param {Object} scene
+   */
   showGraphIssues(scene) {
     const graph = scene.graph;
     const missing = [];
@@ -370,10 +410,18 @@ export class NodeRenderer {
     }
   }
 
+  /**
+   * Sets the selected node ID.
+   * @param {string|null} nodeId
+   */
   setSelectedNodeId(nodeId) {
     this.selectedNodeId = nodeId;
   }
 
+  /**
+   * Sets multiple selected node IDs.
+   * @param {Set|Array} nodeIds
+   */
   setSelectedNodeIds(nodeIds) {
     this.selectedNodeIds = nodeIds instanceof Set ? nodeIds : new Set(nodeIds);
     // Mantener compatibilidad: usa el primero como seleccionado principal
@@ -381,22 +429,42 @@ export class NodeRenderer {
     this.selectedNodeId = first || null;
   }
 
+  /**
+   * Enables or disables drag.
+   * @param {boolean} enabled
+   */
   setDragEnabled(enabled) {
     this.dragEnabled = !!enabled;
   }
 
+  /**
+   * Sets selected edge.
+   * @param {Object|null} edge
+   */
   setSelectedEdge(edge) {
     this.selectedEdge = edge; // { sourceId, targetId } or null
   }
 
+  /**
+   * Sets search matches to highlight.
+   * @param {Set} matchesSet
+   */
   setSearchMatches(matchesSet) {
     this.searchMatches = matchesSet || new Set();
   }
 
+  /**
+   * Requests an auto-layout on next render.
+   */
   requestAutoLayout() {
     this.autoLayoutRequested = true;
   }
 
+  /**
+   * Determines if auto-layout should be performed.
+   * @param {Object} scene
+   * @returns {boolean}
+   */
   shouldAutoLayout(scene) {
     if (this.autoLayoutRequested) return true;
     const nodes = Array.from(scene.graph.nodes.values());
@@ -413,6 +481,11 @@ export class NodeRenderer {
     );
   }
 
+  /**
+   * Computes the required height for the graph container.
+   * @param {Object} scene
+   * @returns {number}
+   */
   computeGraphHeight(scene) {
     let maxY = 0;
     scene.graph.nodes.forEach((node) => {
@@ -426,6 +499,13 @@ export class NodeRenderer {
     return Math.max(400, maxY + estimatedNodeHeight + basePadding);
   }
 
+  /**
+   * Computes start and end points for an edge.
+   * @param {DOMRect} fromRect
+   * @param {DOMRect} toRect
+   * @param {DOMRect} containerRect
+   * @returns {{x1: number, y1: number, x2: number, y2: number}}
+   */
   computeEdgePoints(fromRect, toRect, containerRect) {
     const padding = 8;
     const fx = fromRect.left - containerRect.left + fromRect.width / 2;
@@ -468,6 +548,9 @@ export class NodeRenderer {
     return { x1, y1, x2, y2 };
   }
 
+  /**
+   * Redraws edges (used during drag).
+   */
   redrawEdges() {
     const svg = this.lastSvg;
     const container = this.lastNodesContainer;
@@ -476,6 +559,14 @@ export class NodeRenderer {
     this.drawEdges(svg, container, scene);
   }
 
+  /**
+   * Starts drag operation for nodes.
+   * @param {Event} event
+   * @param {Object} node
+   * @param {HTMLElement} nodeEl
+   * @param {HTMLElement} container
+   * @param {HTMLElement} scrollParent
+   */
   startDrag(event, node, nodeEl, container, scrollParent) {
     const scrollRect = scrollParent.getBoundingClientRect();
     const nodeRect = nodeEl.getBoundingClientRect();

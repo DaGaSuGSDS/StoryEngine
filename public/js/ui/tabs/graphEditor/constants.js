@@ -1,3 +1,9 @@
+/**
+ * constants.js
+ * UI constants for drawing the graph (colors, dimensions, fonts).
+ */
+export const GRID_SIZE = 20;
+
 export const PANEL_WIDTHS = {
   LEFT: "220px",
   RIGHT: "260px",

@@ -1,3 +1,7 @@
+/**
+ * menusStyleSection.js
+ * Renders settings for customizing the appearance of game menus.
+ */
 export const MENU_STYLE_INPUT_IDS = [
   "start-menu-overlay-color",
   "start-menu-overlay-opacity",
@@ -27,6 +31,12 @@ export const MENU_STYLE_INPUT_IDS = [
   "save-delete-button-hover-color",
 ];
 
+/**
+ * Renders the settings section for Start and Save menu styling.
+ * Configuration for colors, opacity, border radii, etc.
+ * @param {Object} settings - Current project settings.
+ * @returns {string} HTML string.
+ */
 export function renderMenuStyleSection(settings) {
   return `
     <section class="settings-section" data-section="menu-styles-start">
@@ -116,9 +126,8 @@ export function renderMenuStyleSection(settings) {
           <div class="menu-preview menu-preview--start" id="start-menu-preview">
             <div class="menu-preview__overlay" id="start-menu-preview-overlay"></div>
             <div class="menu-preview__panel" id="start-menu-preview-panel">
-              <div class="menu-preview__title" id="start-menu-preview-title">${
-                settings.gameTitle || "StoryEngine"
-              }</div>
+              <div class="menu-preview__title" id="start-menu-preview-title">${settings.gameTitle || "StoryEngine"
+    }</div>
               <div class="menu-preview__buttons">
                 <button class="menu-preview__btn" id="start-menu-preview-primary">Nueva partida</button>
                 <button class="menu-preview__btn" id="start-menu-preview-secondary">Cargar partida</button>
@@ -232,7 +241,14 @@ export function renderMenuStyleSection(settings) {
   `;
 }
 
+/**
+ * Updates the live preview for Start Menu and Save Slots based on form inputs.
+ * Reads values from DOM inputs, falling back to settings or defaults.
+ * @param {HTMLElement} container - The settings tab container.
+ * @param {Object} settings - Current project settings (fallback).
+ */
 export function updateMenuSavePreview(container, settings = {}) {
+  // Helper to convert hex to rgba with opacity
   const hexToRgba = (hex, opacity, fallback) => {
     if (!hex) return fallback;
     if (hex.startsWith("rgb")) return hex;
@@ -253,6 +269,7 @@ export function updateMenuSavePreview(container, settings = {}) {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
 
+  // Helper to clamp numeric values within range
   const clamp = (value, min, max, fallback) => {
     const num = Number.parseFloat(value);
     if (Number.isNaN(num)) return fallback;

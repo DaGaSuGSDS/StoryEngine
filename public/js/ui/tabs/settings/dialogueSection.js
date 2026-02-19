@@ -1,3 +1,7 @@
+/**
+ * dialogueSection.js
+ * Renders settings related to dialogue display and styling.
+ */
 export const DIALOGUE_STYLE_INPUT_IDS = [
   "dialogue-style",
   "dialogue-box-color",
@@ -6,6 +10,11 @@ export const DIALOGUE_STYLE_INPUT_IDS = [
   "dialogue-font-size",
 ];
 
+/**
+ * Renders the settings section for dialogue customization.
+ * @param {Object} settings - Current project settings.
+ * @returns {string} HTML string of the section.
+ */
 export function renderDialogueSection(settings) {
   return `
     <section class="settings-section" data-section="dialogue">
@@ -17,15 +26,12 @@ export function renderDialogueSection(settings) {
         <div class="form-group">
           <label>Estilo</label>
           <select id="dialogue-style">
-            <option value="classic" ${
-              settings.dialogueStyle === "classic" ? "selected" : ""
-            }>Clásico Visual Novel</option>
-            <option value="bubble" ${
-              settings.dialogueStyle === "bubble" ? "selected" : ""
-            }>Burbujas de Diálogo</option>
-            <option value="minimal" ${
-              settings.dialogueStyle === "minimal" ? "selected" : ""
-            }>Minimalista</option>
+            <option value="classic" ${settings.dialogueStyle === "classic" ? "selected" : ""
+    }>Clásico Visual Novel</option>
+            <option value="bubble" ${settings.dialogueStyle === "bubble" ? "selected" : ""
+    }>Burbujas de Diálogo</option>
+            <option value="minimal" ${settings.dialogueStyle === "minimal" ? "selected" : ""
+    }>Minimalista</option>
           </select>
         </div>
 
@@ -58,6 +64,10 @@ export function renderDialogueSection(settings) {
   `;
 }
 
+/**
+ * Updates the live preview of the dialogue box based on current form values.
+ * @param {HTMLElement} container - The settings tab container element.
+ */
 export function updateDialoguePreview(container) {
   const style = container.querySelector("#dialogue-style")?.value || "classic";
   const boxColor = container.querySelector("#dialogue-box-color")?.value || "#1e1e1e";

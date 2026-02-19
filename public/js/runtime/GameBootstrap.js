@@ -1,4 +1,8 @@
 import { ProjectStore } from "../state/ProjectStore.js";
+/**
+ * GameBootstrap.js
+ * Entry point for launching the game runtime (start screen, menus, etc.).
+ */
 import { StoryEngine } from "./StoryEngine.js";
 
 let SETTINGS = {};
@@ -21,6 +25,15 @@ let saveSystemReady = false;
 let startScreenEl = null;
 let startMenuEl = null;
 
+// Helper functions for clamping and color conversion
+/**
+ * Clamps a number between min and max.
+ * @param {string|number} value
+ * @param {number} fallback
+ * @param {number} min
+ * @param {number} max
+ * @returns {number}
+ */
 const clampNumber = (value, fallback, min, max) => {
     const num = Number(value);
     if (!Number.isFinite(num)) return fallback;
@@ -28,12 +41,25 @@ const clampNumber = (value, fallback, min, max) => {
     return max !== undefined ? Math.min(max, minApplied) : minApplied;
 };
 
+/**
+ * Clamps opacity between 0 and 1.
+ * @param {string|number} value
+ * @param {number} fallback
+ * @returns {number}
+ */
 const clampOpacity = (value, fallback = 1) => {
     const num = Number(value);
     if (!Number.isFinite(num)) return fallback;
     return Math.min(1, Math.max(0, num));
 };
 
+/**
+ * Converts a color string to RGBA.
+ * @param {string} color
+ * @param {number} opacity
+ * @param {string} fallback
+ * @returns {string}
+ */
 const toRgba = (color, opacity, fallback) => {
     if (!color || typeof color !== "string") return fallback;
     if (color.trim().startsWith("rgb")) {
@@ -56,6 +82,9 @@ const toRgba = (color, opacity, fallback) => {
     return "rgba(" + r + ", " + g + ", " + b + ", " + alpha + ")";
 };
 
+/**
+ * Applies CSS variables from settings for the menu.
+ */
 function applyMenuStylesFromSettings() {
     const root = document.documentElement;
     const setVar = (name, value) => {
@@ -162,6 +191,10 @@ function applyMenuStylesFromSettings() {
     setVar("--save-delete-hover-bg", SETTINGS.saveDeleteButtonHoverColor || "#a61e1e");
 }
 
+/**
+ * Gets the URL for the start screen image.
+ * @returns {string|null}
+ */
 function getStartImageUrl() {
     const images = Array.isArray(PROJECT_DATA.images) ? PROJECT_DATA.images : [];
     const byId = (id) => images.find((img) => img.id === id);
@@ -172,6 +205,11 @@ function getStartImageUrl() {
     return chosen ? `./images/${chosen.fileName}` : null;
 }
 
+/**
+ * Renders the start screen.
+ * @param {HTMLElement} playView
+ * @param {Object} store
+ */
 function renderStartScreen(playView, store) {
     removeStartScreen();
 
@@ -235,6 +273,11 @@ function renderStartScreen(playView, store) {
     document.body.appendChild(startScreenEl);
 }
 
+/**
+ * Renders the start menu (New Game / Load Game).
+ * @param {HTMLElement} playView
+ * @param {Object} store
+ */
 function renderStartMenu(playView, store) {
     removeStartMenu();
 
@@ -266,6 +309,9 @@ function renderStartMenu(playView, store) {
     document.body.appendChild(startMenuEl);
 }
 
+/**
+ * Removes the start menu.
+ */
 function removeStartMenu() {
     if (startMenuEl && startMenuEl.parentNode) {
         startMenuEl.parentNode.removeChild(startMenuEl);
@@ -273,6 +319,9 @@ function removeStartMenu() {
     startMenuEl = null;
 }
 
+/**
+ * Removes the start screen.
+ */
 function removeStartScreen() {
     if (startScreenEl && startScreenEl.parentNode) {
         startScreenEl.parentNode.removeChild(startScreenEl);
@@ -280,6 +329,11 @@ function removeStartScreen() {
     startScreenEl = null;
 }
 
+/**
+ * Starts a new game.
+ * @param {HTMLElement} playView
+ * @param {Object} store
+ */
 async function startNewGame(playView, store) {
     if (saveSystemReady && saveLoadUI && saveManager) {
         await saveLoadUI.showSlotSelector(
@@ -308,6 +362,10 @@ async function startNewGame(playView, store) {
     removeStartMenu();
 }
 
+/**
+ * Initializes save system if enabled.
+ * @returns {Promise<boolean>}
+ */
 async function initSaveSystemIfEnabled() {
     if (!ENABLE_SAVE_LOAD) {
         return false;
@@ -343,6 +401,9 @@ async function initSaveSystemIfEnabled() {
     }
 }
 
+/**
+ * Sets up global keyboard shortcuts.
+ */
 function setupKeyboardShortcuts() {
     document.addEventListener("keydown", async (e) => {
         // ESC - Abrir menú de carga
@@ -358,6 +419,10 @@ function setupKeyboardShortcuts() {
     });
 }
 
+/**
+ * Bootstraps the game execution.
+ * @param {Object} projectData
+ */
 export async function bootstrapGame(projectData) {
     PROJECT_DATA = projectData;
     const store = new ProjectStore();

@@ -1,6 +1,15 @@
+/**
+ * AudioTab.js
+ * UI component for managing audio assets in the project.
+ */
+import { AudioAsset } from "../../models/AudioAsset.js";
 import { showError, showInfo } from "../notifications.js";
 
 export class AudioTab {
+  /**
+   * @param {Object} projectStore
+   * @param {Object} apiClient
+   */
   constructor(projectStore, apiClient) {
     this.projectStore = projectStore;
     this.apiClient = apiClient;
@@ -8,6 +17,10 @@ export class AudioTab {
     this.unsubscribe = this.projectStore.subscribe(() => this.refresh());
   }
 
+  /**
+   * Renders the tab.
+   * @returns {HTMLElement}
+   */
   render() {
     if (!this.unsubscribe) {
       this.unsubscribe = this.projectStore.subscribe(() => this.refresh());
@@ -40,6 +53,9 @@ export class AudioTab {
     return this.root;
   }
 
+  /**
+   * Handles audio upload.
+   */
   async handleUpload() {
     if (!this.projectStore.project) {
       showError("Carga o crea un proyecto primero.");
@@ -65,6 +81,9 @@ export class AudioTab {
     }
   }
 
+  /**
+   * Refreshes audio list.
+   */
   refresh() {
     if (!this.root) return;
     const tbody = this.root.querySelector("#audio-table tbody");
@@ -209,6 +228,9 @@ export class AudioTab {
     });
   }
 
+  /**
+   * Cleans up subscriptions.
+   */
   destroy() {
     if (this.unsubscribe) {
       this.unsubscribe();

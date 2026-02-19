@@ -3,6 +3,9 @@
  * Manages lifecycle (mount/destroy), DOM creation, and event cleanup.
  */
 export class Component {
+    /**
+     * @param {Object} props - Component properties.
+     */
     constructor(props = {}) {
         this.props = props;
         this.element = null;

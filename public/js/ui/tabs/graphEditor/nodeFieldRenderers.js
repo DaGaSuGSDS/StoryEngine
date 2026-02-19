@@ -1,3 +1,7 @@
+/**
+ * nodeFieldRenderers.js
+ * Renders input fields for different node types in the inspector.
+ */
 import { NODE_TYPES } from "../../../models/nodes/nodeTypes.js";
 import { createLabeledInput, createSelectField } from "../../uiHelpers.js";
 import { createCharacterStateSelector } from "./graphEditorHelpers.js";
@@ -8,6 +12,12 @@ import {
 } from "./constants.js";
 import { escapeHtml } from "../../../utils/sanitize.js";
 
+/**
+ * Renders specific fields based on node type.
+ * @param {Object} node
+ * @param {HTMLElement} container
+ * @param {Object} projectStore
+ */
 export function renderNodeTypeFields(node, container, projectStore) {
   switch (node.type) {
     case NODE_TYPES.DIALOGUE:
@@ -55,6 +65,12 @@ export function renderNodeTypeFields(node, container, projectStore) {
   }
 }
 
+/**
+ * Renders fields for Dialogue node.
+ * @param {Object} node
+ * @param {HTMLElement} container
+ * @param {Object} projectStore
+ */
 function renderDialogueFields(node, container, projectStore) {
   if (!node.dialoguePosition) {
     node.dialoguePosition = "bottom";
@@ -121,6 +137,12 @@ function renderDialogueFields(node, container, projectStore) {
   });
 }
 
+/**
+ * Renders fields for Animation node.
+ * @param {Object} node
+ * @param {HTMLElement} container
+ * @param {Object} projectStore
+ */
 function renderAnimationFields(node, container, projectStore) {
   if (!Array.isArray(node.animations)) {
     node.animations = [];
@@ -299,6 +321,10 @@ function renderAnimationFields(node, container, projectStore) {
   container.appendChild(addDiv);
 }
 
+/**
+ * Renders info for PlayerOptions node.
+ * @param {HTMLElement} container
+ */
 function renderPlayerOptionsInfo(container) {
   const info = document.createElement("div");
   info.className = "panel-section muted";
@@ -307,6 +333,12 @@ function renderPlayerOptionsInfo(container) {
   container.appendChild(info);
 }
 
+/**
+ * Renders fields for SetFlag node.
+ * @param {Object} node
+ * @param {HTMLElement} container
+ * @param {Object} projectStore
+ */
 function renderSetFlagFields(node, container, projectStore) {
   const flagOptions = projectStore.flags.map((f) => ({
     value: f.id,
@@ -326,6 +358,12 @@ function renderSetFlagFields(node, container, projectStore) {
   });
 }
 
+/**
+ * Renders fields for Operation node.
+ * @param {Object} node
+ * @param {HTMLElement} container
+ * @param {Object} projectStore
+ */
 function renderOperationFields(node, container, projectStore) {
   const charOptions = projectStore.characters.map((c) => ({
     value: c.id,
@@ -440,6 +478,12 @@ function renderOperationFields(node, container, projectStore) {
   });
 }
 
+/**
+ * Renders fields for Conditional node.
+ * @param {Object} node
+ * @param {HTMLElement} container
+ * @param {Object} projectStore
+ */
 function renderConditionalFields(node, container, projectStore) {
   const charOptions = projectStore.characters.map((c) => ({
     value: c.id,
@@ -683,6 +727,12 @@ function renderConditionalFields(node, container, projectStore) {
   });
 }
 
+/**
+ * Renders fields for FlagTest node.
+ * @param {Object} node
+ * @param {HTMLElement} container
+ * @param {Object} projectStore
+ */
 function renderFlagTestFields(node, container, projectStore) {
   const flagOptions = projectStore.flags.map((f) => ({
     value: f.id,
@@ -702,6 +752,12 @@ function renderFlagTestFields(node, container, projectStore) {
   });
 }
 
+/**
+ * Renders fields for SceneChange node.
+ * @param {Object} node
+ * @param {HTMLElement} container
+ * @param {Object} projectStore
+ */
 function renderSceneChangeFields(node, container, projectStore) {
   const sceneOptions = projectStore.scenes.map((s) => ({
     value: s.id,
@@ -721,6 +777,12 @@ function renderSceneChangeFields(node, container, projectStore) {
   });
 }
 
+/**
+ * Renders fields for Audio node.
+ * @param {Object} node
+ * @param {HTMLElement} container
+ * @param {Object} projectStore
+ */
 function renderAudioFields(node, container, projectStore) {
   const audioOptions = projectStore.audio.map((a) => ({
     value: a.id,
@@ -825,6 +887,12 @@ function renderAudioFields(node, container, projectStore) {
   });
 }
 
+/**
+ * Renders fields for Wait node.
+ * @param {Object} node
+ * @param {HTMLElement} container
+ * @param {Object} projectStore
+ */
 function renderWaitFields(node, container, projectStore) {
   const durInput = createLabeledInput({
     container,
@@ -840,6 +908,12 @@ function renderWaitFields(node, container, projectStore) {
   });
 }
 
+/**
+ * Renders fields for BackgroundChange node.
+ * @param {Object} node
+ * @param {HTMLElement} container
+ * @param {Object} projectStore
+ */
 function renderBackgroundChangeFields(node, container, projectStore) {
   const imgOptions = projectStore.images.map((img) => ({
     value: img.id,
@@ -875,6 +949,12 @@ function renderBackgroundChangeFields(node, container, projectStore) {
   });
 }
 
+/**
+ * Renders fields for SetCharacterState node.
+ * @param {Object} node
+ * @param {HTMLElement} container
+ * @param {Object} projectStore
+ */
 function renderSetCharacterStateFields(node, container, projectStore) {
   if (!Array.isArray(node.changes)) {
     node.changes = [];
@@ -976,6 +1056,10 @@ function renderSetCharacterStateFields(node, container, projectStore) {
   container.appendChild(addDiv);
 }
 
+/**
+ * Renders info for Random node.
+ * @param {HTMLElement} container
+ */
 function renderRandomInfo(container) {
   const info = document.createElement("div");
   info.className = "panel-section muted";

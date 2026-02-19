@@ -1,12 +1,24 @@
 import { PANEL_WIDTHS } from "./constants.js";
 
+/**
+ * ScenePanel.js
+ * Component for managing scene-level settings (start node, etc.).
+ */
 export class ScenePanel {
+  /**
+   * @param {Object} projectStore
+   * @param {Function} onSceneSelect
+   */
   constructor(projectStore, onSceneSelect) {
     this.projectStore = projectStore;
     this.onSceneSelect = onSceneSelect;
     this.root = null;
   }
 
+  /**
+   * Renders the scene panel.
+   * @returns {HTMLElement}
+   */
   render() {
     this.root = document.createElement("div");
     this.root.className = "panel";
@@ -27,6 +39,9 @@ export class ScenePanel {
     return this.root;
   }
 
+  /**
+   * Attaches event handlers to buttons.
+   */
   attachHandlers() {
     const sceneAddBtn = this.root.querySelector("#scene-add");
     const sceneRemoveBtn = this.root.querySelector("#scene-remove");
@@ -48,6 +63,9 @@ export class ScenePanel {
     });
   }
 
+  /**
+   * Renders the list of scenes.
+   */
   renderSceneList() {
     const ul = this.root.querySelector("#scene-list");
     if (!ul) return;
@@ -70,6 +88,9 @@ export class ScenePanel {
     });
   }
 
+  /**
+   * Refreshes the panel.
+   */
   refresh() {
     this.renderSceneList();
   }
