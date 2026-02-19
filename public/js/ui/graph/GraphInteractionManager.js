@@ -8,6 +8,7 @@ import {
     serializeNode,
     createNodeFromRaw,
 } from "../../models/nodes/nodeFactory.js";
+import { getMaxOutputs } from "../../models/nodes/nodeTypes.js";
 import { AddNodeCommand } from "../../commands/AddNodeCommand.js";
 import { DeleteNodeCommand } from "../../commands/DeleteNodeCommand.js";
 import { ConnectNodeCommand } from "../../commands/ConnectNodeCommand.js";
@@ -641,6 +642,7 @@ export class GraphInteractionManager {
 
     /**
      * Creates a connection between two nodes.
+     * Handles auto-replacement if the source node has reached its output limit.
      * @param {string} sourceId
      * @param {string} targetId
      */
@@ -648,12 +650,36 @@ export class GraphInteractionManager {
         const scene = this.projectStore.currentScene;
         if (!scene) return;
 
-        const cmd = new ConnectNodeCommand(scene, sourceId, targetId);
-        if (this.projectStore.executeCommand(cmd)) {
+        const sourceNode = scene.graph.getNode(sourceId);
+        if (!sourceNode) return;
+
+        // Check output limits
+        const maxOutputs = getMaxOutputs(sourceNode.type);
+        const currentOutputs = sourceNode.nextNodeIds ? sourceNode.nextNodeIds.filter(id => id !== null).length : 0;
+
+        let cmdToExecute;
+
+        // If limit is 1 and we already have a connection, replace it
+        if (maxOutputs === 1 && currentOutputs >= 1) {
+            const existingTargetId = sourceNode.nextNodeIds.find(id => id !== null);
+            if (existingTargetId) {
+                // disconnecting existing...
+                const disconnectCmd = new DisconnectNodeCommand(scene, sourceId, existingTargetId);
+                const connectCmd = new ConnectNodeCommand(scene, sourceId, targetId);
+                cmdToExecute = new MultiCommand([disconnectCmd, connectCmd], "Reemplazar conexión");
+            } else {
+                cmdToExecute = new ConnectNodeCommand(scene, sourceId, targetId);
+            }
+        } else if (currentOutputs >= maxOutputs) {
+            showError(`Este nodo solo admite ${maxOutputs} conexión(es)`, 2000);
+            return;
+        } else {
+            cmdToExecute = new ConnectNodeCommand(scene, sourceId, targetId);
+        }
+
+        if (this.projectStore.executeCommand(cmdToExecute)) {
             showInfo("Conexión creada", 1500);
             this.callbacks.onRefresh();
-        } else {
-            // Already connected or failed
         }
     }
 }

@@ -5,6 +5,7 @@
 import {
   NODE_TYPES,
   isLogicNodeType,
+  getMaxOutputs,
 } from "../../../models/nodes/nodeTypes.js";
 import { autoLayoutGraph } from "../../../layout/GraphLayout.js";
 import { showInfo } from "../../notifications.js";
@@ -283,6 +284,21 @@ export class NodeRenderer {
       );
       if (!fromEl) return;
 
+      // Clean up previous visual dots
+      fromEl.querySelectorAll(".edge-origin-dot").forEach((el) => el.remove());
+
+      // Reset port position to CSS default
+      const port = fromEl.querySelector(".node-port");
+      if (port) {
+        port.style.removeProperty("left");
+        port.style.removeProperty("top");
+        port.style.removeProperty("transform");
+        port.style.removeProperty("right");
+        port.style.removeProperty("bottom");
+      }
+
+      const maxOutputs = getMaxOutputs(node.type);
+
       (node.nextNodeIds || []).forEach((nextId) => {
         const toEl = container.querySelector(
           `.node-card[data-node-id="${nextId}"]`
@@ -294,6 +310,21 @@ export class NodeRenderer {
           toEl.getBoundingClientRect(),
           containerRect
         );
+
+        // Calculate relative position using current DOM offset to avoid drag lag
+        const relX = points.x1 - fromEl.offsetLeft;
+        const relY = points.y1 - fromEl.offsetTop;
+
+        // Visuals for ALL nodes (Extra Dots at edge origin)
+        // Main port always stays fixed.
+        const dot = document.createElement("div");
+        dot.className = "node-port edge-origin-dot";
+        dot.style.position = "absolute";
+        dot.style.left = `${relX}px`;
+        dot.style.top = `${relY}px`;
+        dot.style.transform = "translate(-50%, -50%)";
+        dot.style.pointerEvents = "none"; // Visual only
+        fromEl.appendChild(dot);
 
         // Hit area (invisible thicker line for easier clicking)
         const hitLine = document.createElementNS(svgNS, "line");
