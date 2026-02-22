@@ -124,4 +124,4 @@ graph TD
     *   Iniciará el servidor backend en el puerto 3000 (por defecto).
     *   Iniciará el servidor del frontend y abrirá la aplicación en tu navegador (usualmente en `http://localhost:9999`).
 
-Una vez iniciado, podrás crear nuevos proyectos, editar los existentes y exportarlos.
+Una vez iniciado, podrás crear nuevos proyectos, editar los existentes y exportarlos. 
