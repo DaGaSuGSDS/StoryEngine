@@ -251,7 +251,7 @@ export class NodeRenderer {
     // 1. Limpieza Robusta: Eliminar solo las líneas de borde y áreas de impacto
     // Usamos querySelectorAll con las clases que vamos a añadir abajo
     svg.querySelectorAll(".edge-line, .edge-hit-area").forEach((el) => el.remove());
-    container.querySelectorAll(".edge-label").forEach((el) => el.remove());
+    container.querySelectorAll(".edge-label, .edge-origin-dot").forEach((el) => el.remove());
 
     const graph = scene.graph;
     const svgNS = "http://www.w3.org/2000/svg";
@@ -284,9 +284,6 @@ export class NodeRenderer {
         `.node-card[data-node-id="${node.id}"]`
       );
       if (!fromEl) return;
-
-      // Clean up previous visual dots
-      fromEl.querySelectorAll(".edge-origin-dot").forEach((el) => el.remove());
 
       // Reset port position to CSS default
       const port = fromEl.querySelector(".node-port");
@@ -324,18 +321,14 @@ export class NodeRenderer {
           containerRect
         );
 
-        // Calculate relative position using current DOM offset to avoid drag lag
-        const relX = points.x1 - fromEl.offsetLeft;
-        const relY = points.y1 - fromEl.offsetTop;
-
         // Visuals for ALL nodes (Extra Dots at edge origin)
         // Main port always stays fixed.
         const dot = document.createElement("div");
         dot.className = "node-port edge-origin-dot";
         dot.title = "Arrastra para conectar";
         dot.style.position = "absolute";
-        dot.style.left = `${relX}px`;
-        dot.style.top = `${relY}px`;
+        dot.style.left = `${points.x1}px`;
+        dot.style.top = `${points.y1}px`;
         dot.style.transform = "translate(-50%, -50%)";
         dot.style.cursor = "crosshair"; // Indicate actionable
 
@@ -343,18 +336,11 @@ export class NodeRenderer {
           e.stopPropagation();
           e.preventDefault();
           if (this.onConnectionStart) {
-            // Pass the index of the connection we are dragging from (for replacement)
-            // We need to find the index of 'nextId' in node.nextNodeIds
-            // Note: node.nextNodeIds might contain nulls, so we need exact index.
-            // But wait, we are iterating node.nextNodeIds. So we can just use the loop index?
-            // The loop is: (node.nextNodeIds || []).forEach((nextId) => { ...
-            // But forEach doesn't give index if we don't ask for it.
-            // Let's change the loop signature.
             this.onConnectionStart(node.id, e, index);
           }
         });
 
-        fromEl.appendChild(dot);
+        container.appendChild(dot);
 
         // Hit area (invisible thicker line for easier clicking)
         const hitLine = document.createElementNS(svgNS, "line");
