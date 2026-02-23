@@ -1,8 +1,28 @@
 /**
+ * GameState.js
+ * Model representing a snapshot of the game state for saving/loading.
+ */
+/**
  * GameState - Representa el estado completo del juego en un momento dado
  * Esta clase maneja la serialización y deserialización del estado para guardado/cargado
  */
 export class GameState {
+  /**
+   * @param {Object} options
+   * @param {string} options.version
+   * @param {string} options.projectId
+   * @param {string} options.currentSceneId
+   * @param {string} options.currentNodeId
+   * @param {Array} options.flags
+   * @param {Object} options.characterVariables
+   * @param {string} options.backgroundImageId
+   * @param {Object} options.characterVisuals
+   * @param {number} options.timestamp
+   * @param {number} options.playTime
+   * @param {string} options.scenePreview
+   * @param {number} options.slotNumber
+   * @param {Object} options.dialogueHistory
+   */
   constructor({
     version = "1.0",
     projectId = null,

@@ -1,3 +1,13 @@
+/**
+ * basicInfoSection.js
+ * Renders the basic project information settings (title, version, author).
+ */
+/**
+ * Renders the form for basic project information.
+ * @param {Object} settings - Current project settings.
+ * @param {string} imageOptionsHtml - HTML string of option elements for image selection.
+ * @returns {string} HTML string of the section.
+ */
 export function renderBasicInfoSection(settings, imageOptionsHtml) {
   return `
     <section class="settings-section" data-section="basic-info">

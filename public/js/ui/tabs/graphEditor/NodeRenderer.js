@@ -1,6 +1,11 @@
+/**
+ * NodeRenderer.js
+ * Component responsible for drawing nodes and edges on the canvas.
+ */
 import {
   NODE_TYPES,
   isLogicNodeType,
+  getMaxOutputs,
 } from "../../../models/nodes/nodeTypes.js";
 import { autoLayoutGraph } from "../../../layout/GraphLayout.js";
 import { showInfo } from "../../notifications.js";
@@ -8,10 +13,21 @@ import { escapeHtml } from "../../../utils/sanitize.js";
 import { MoveNodesCommand } from "../../../commands/MoveNodesCommand.js";
 
 export class NodeRenderer {
-  constructor(projectStore, onNodeSelect, onNodeContextMenu) {
+  /**
+   * @param {Object} projectStore
+   * @param {Function} onNodeSelect
+   * @param {Function} onNodeContextMenu
+   * @param {Function} onConnectionStart
+   * @param {Function} onEdgeSelect
+   * @param {Function} onEdgeContextMenu
+   */
+  constructor(projectStore, onNodeSelect, onNodeContextMenu, onConnectionStart, onEdgeSelect, onEdgeContextMenu) {
     this.projectStore = projectStore;
     this.onNodeSelect = onNodeSelect;
     this.onNodeContextMenu = onNodeContextMenu;
+    this.onConnectionStart = onConnectionStart;
+    this.onEdgeSelect = onEdgeSelect;
+    this.onEdgeContextMenu = onEdgeContextMenu;
     this.scrollState = { top: 0, left: 0 };
     this.lastGraphIssuesHash = "";
     this.dragEnabled = false;
@@ -22,8 +38,14 @@ export class NodeRenderer {
     this.lastNodesContainer = null;
     this.lastScene = null;
     this.selectedNodeIds = new Set();
+    this.selectedEdge = null;
   }
 
+  /**
+   * Renders the graph.
+   * @param {HTMLElement} container
+   * @param {HTMLElement} scrollParent
+   */
   render(container, scrollParent) {
     if (!container) return;
 
@@ -109,6 +131,14 @@ export class NodeRenderer {
     }
   }
 
+  /**
+   * Creates a DOM element for a node.
+   * @param {Object} node
+   * @param {Object} graph
+   * @param {HTMLElement} container
+   * @param {HTMLElement} scrollParent
+   * @returns {HTMLElement}
+   */
   createNodeElement(node, graph, container, scrollParent) {
     const div = document.createElement("div");
     div.className = "node-card";
@@ -177,9 +207,27 @@ export class NodeRenderer {
       }
     });
 
+    // Connection Port
+    const port = document.createElement("div");
+    port.className = "node-port";
+    port.title = "Arrastra para conectar";
+    port.addEventListener("mousedown", (e) => {
+      e.stopPropagation(); // Prevent drag node
+      e.preventDefault();
+      if (this.onConnectionStart) {
+        this.onConnectionStart(node.id, e);
+      }
+    });
+    div.appendChild(port);
+
     return div;
   }
 
+  /**
+   * Gets the CSS class for a node type tag.
+   * @param {string} type
+   * @returns {string}
+   */
   getTypeTagClass(type) {
     if (type === NODE_TYPES.DIALOGUE) return "tag-dialogue";
     if (type === NODE_TYPES.ANIMATION) return "tag-animation";
@@ -193,13 +241,43 @@ export class NodeRenderer {
     return "";
   }
 
+  /**
+   * Draws edges between nodes.
+   * @param {SVGElement} svg
+   * @param {HTMLElement} container
+   * @param {Object} scene
+   */
   drawEdges(svg, container, scene) {
-    // Elimina líneas previas para evitar duplicados
-    svg.querySelectorAll("line").forEach((line) => line.remove());
+    // 1. Limpieza Robusta: Eliminar solo las líneas de borde y áreas de impacto
+    // Usamos querySelectorAll con las clases que vamos a añadir abajo
+    svg.querySelectorAll(".edge-line, .edge-hit-area").forEach((el) => el.remove());
+    container.querySelectorAll(".edge-label, .edge-origin-dot").forEach((el) => el.remove());
 
     const graph = scene.graph;
     const svgNS = "http://www.w3.org/2000/svg";
     const containerRect = container.getBoundingClientRect();
+
+    // 2. Asegurar que los marcadores existan (Arrowheads)
+    // Se definen de nuevo por si acaso se borraron accidentalmente
+    if (!svg.querySelector("#arrowhead")) {
+      const defs = svg.querySelector("defs") || document.createElementNS(svgNS, "defs");
+      if (!svg.querySelector("defs")) svg.insertBefore(defs, svg.firstChild);
+
+      const marker = document.createElementNS(svgNS, "marker");
+      marker.setAttribute("id", "arrowhead");
+      marker.setAttribute("markerWidth", "7");
+      marker.setAttribute("markerHeight", "7");
+      marker.setAttribute("refX", "5");
+      marker.setAttribute("refY", "3.5");
+      marker.setAttribute("orient", "auto");
+      marker.setAttribute("viewBox", "0 0 7 7");
+      const markerPath = document.createElementNS(svgNS, "path");
+      markerPath.setAttribute("d", "M 0 0 L 7 3.5 L 0 7 L 0 0 z");
+      markerPath.setAttribute("fill", "#888888");
+      markerPath.setAttribute("stroke", "none");
+      marker.appendChild(markerPath);
+      defs.appendChild(marker);
+    }
 
     graph.nodes.forEach((node) => {
       const fromEl = container.querySelector(
@@ -207,7 +285,31 @@ export class NodeRenderer {
       );
       if (!fromEl) return;
 
-      (node.nextNodeIds || []).forEach((nextId) => {
+      // Reset port position to CSS default
+      const port = fromEl.querySelector(".node-port");
+      if (port) {
+        port.style.removeProperty("left");
+        port.style.removeProperty("top");
+        port.style.removeProperty("transform");
+        port.style.removeProperty("right");
+        port.style.removeProperty("bottom");
+      }
+
+      const maxOutputs = getMaxOutputs(node.type);
+      const currentOutputs = (node.nextNodeIds || []).filter((id) => id !== null).length;
+
+      // Logic for main port visibility:
+      // Show if unlimited outputs OR current outputs < max outputs
+      // Hide if limit reached (user should use edge dots to modify existing)
+      if (port) {
+        if (maxOutputs !== Infinity && currentOutputs >= maxOutputs) {
+          port.style.display = "none";
+        } else {
+          port.style.display = ""; // Reset to CSS default (flex/block)
+        }
+      }
+
+      (node.nextNodeIds || []).forEach((nextId, index) => {
         const toEl = container.querySelector(
           `.node-card[data-node-id="${nextId}"]`
         );
@@ -219,7 +321,73 @@ export class NodeRenderer {
           containerRect
         );
 
+        // Visuals for ALL nodes (Extra Dots at edge origin)
+        // Main port always stays fixed.
+        const dot = document.createElement("div");
+        dot.className = "node-port edge-origin-dot";
+        dot.title = "Arrastra para conectar";
+        dot.style.position = "absolute";
+        dot.style.left = `${points.x1}px`;
+        dot.style.top = `${points.y1}px`;
+        dot.style.transform = "translate(-50%, -50%)";
+        dot.style.cursor = "crosshair"; // Indicate actionable
+
+        dot.addEventListener("mousedown", (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          if (this.onConnectionStart) {
+            this.onConnectionStart(node.id, e, index);
+          }
+        });
+
+        container.appendChild(dot);
+
+        // Hit area (invisible thicker line for easier clicking)
+        const hitLine = document.createElementNS(svgNS, "line");
+        hitLine.classList.add("edge-hit-area");
+        hitLine.setAttribute("x1", points.x1);
+        hitLine.setAttribute("y1", points.y1);
+        hitLine.setAttribute("x2", points.x2);
+        hitLine.setAttribute("y2", points.y2);
+        // Use nearly transparent, not 'transparent' keyword, and paint it
+        hitLine.setAttribute("stroke", "rgba(255, 0, 0, 0.001)");
+        hitLine.setAttribute("stroke-width", "20"); // Even wider
+        hitLine.setAttribute("fill", "none");
+        hitLine.style.cursor = "pointer";
+        // Explicitly enable pointer events for this element override parent
+        hitLine.style.pointerEvents = "all";
+        hitLine.dataset.source = node.id;
+        hitLine.dataset.target = nextId;
+
+        // Prevent marquee from starting when clicking edge
+        hitLine.addEventListener("mousedown", (e) => {
+          e.preventDefault(); // Also prevent dragging text etc
+          e.stopPropagation();
+        });
+
+        // Event listener for selection
+        hitLine.addEventListener("click", (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          if (this.onEdgeSelect) {
+            this.onEdgeSelect(node.id, nextId);
+          }
+        });
+
+        // Event listener for context menu
+        hitLine.addEventListener("contextmenu", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (this.onEdgeContextMenu) {
+            this.onEdgeContextMenu(e.clientX, e.clientY, node.id, nextId);
+          }
+        });
+
+        svg.appendChild(hitLine);
+
+        // Visible line
         const line = document.createElementNS(svgNS, "line");
+        line.classList.add("edge-line");
         line.setAttribute("x1", points.x1);
         line.setAttribute("y1", points.y1);
         line.setAttribute("x2", points.x2);
@@ -228,11 +396,79 @@ export class NodeRenderer {
         line.setAttribute("stroke-width", "2");
         line.setAttribute("fill", "none");
         line.setAttribute("marker-end", "url(#arrowhead)");
+        line.style.pointerEvents = "none"; // Let clicks pass to hitLine
+
+        // Check if this edge is selected
+        if (this.selectedEdge && this.selectedEdge.sourceId === node.id && this.selectedEdge.targetId === nextId) {
+          line.setAttribute("stroke", "#4CAF50"); // Selected color
+          line.setAttribute("marker-end", "url(#arrowhead-selected)");
+        }
+
         svg.appendChild(line);
+
+        // --- Edge Label (User Request) ---
+        let labelText = null;
+        if (node.type === NODE_TYPES.CONDITIONAL || node.type === NODE_TYPES.FLAG_TEST) {
+          labelText = index === 0 ? "Verdadero" : "Falso";
+        } else if (node.type === NODE_TYPES.PLAYER_OPTIONS) {
+          const optText = (node.options && node.options[index]) ? node.options[index] : `Opción ${index + 1}`;
+          labelText = optText.length > 20 ? optText.substring(0, 17) + "..." : optText;
+        }
+
+        if (labelText) {
+          const labelDiv = document.createElement("div");
+          labelDiv.className = "edge-label";
+          labelDiv.textContent = labelText;
+
+          // Position near source (25% along the path)
+          // Points are relative to svg/container (which matches containerRect if scrolled?)
+          // Actually points are computed relative to containerRect's top-left.
+          // But container is usually relative positioned.
+          // Let's verify computeEdgePoints returns.
+          // x1, y1 are relative to container top-left (fx = fromRect.left - containerRect.left...)
+
+          // But wait, computeEdgePoints uses containerRect.
+          // And NodeRenderer appends SVG to container.
+          // So coordinates are aligned with container.
+
+          const t = 0.5; // 50% from source (center)
+          const lx = points.x1 + (points.x2 - points.x1) * t;
+          const ly = points.y1 + (points.y2 - points.y1) * t;
+
+          labelDiv.style.left = `${lx}px`;
+          labelDiv.style.top = `${ly}px`;
+
+          container.appendChild(labelDiv);
+        }
       });
     });
+
+    // Ensure selected marker exists
+    if (!svg.querySelector("#arrowhead-selected")) {
+      const defs = svg.querySelector("defs") || document.createElementNS(svgNS, "defs");
+      if (!svg.querySelector("defs")) svg.insertBefore(defs, svg.firstChild);
+
+      const marker = document.createElementNS(svgNS, "marker");
+      marker.setAttribute("id", "arrowhead-selected");
+      marker.setAttribute("markerWidth", "7");
+      marker.setAttribute("markerHeight", "7");
+      marker.setAttribute("refX", "5");
+      marker.setAttribute("refY", "3.5");
+      marker.setAttribute("orient", "auto");
+      marker.setAttribute("viewBox", "0 0 7 7");
+      const markerPath = document.createElementNS(svgNS, "path");
+      markerPath.setAttribute("d", "M 0 0 L 7 3.5 L 0 7 L 0 0 z");
+      markerPath.setAttribute("fill", "#4CAF50");
+      markerPath.setAttribute("stroke", "none");
+      marker.appendChild(markerPath);
+      defs.appendChild(marker);
+    }
   }
 
+  /**
+   * Checks for graph issues (e.g. missing connection targets).
+   * @param {Object} scene
+   */
   showGraphIssues(scene) {
     const graph = scene.graph;
     const missing = [];
@@ -256,10 +492,18 @@ export class NodeRenderer {
     }
   }
 
+  /**
+   * Sets the selected node ID.
+   * @param {string|null} nodeId
+   */
   setSelectedNodeId(nodeId) {
     this.selectedNodeId = nodeId;
   }
 
+  /**
+   * Sets multiple selected node IDs.
+   * @param {Set|Array} nodeIds
+   */
   setSelectedNodeIds(nodeIds) {
     this.selectedNodeIds = nodeIds instanceof Set ? nodeIds : new Set(nodeIds);
     // Mantener compatibilidad: usa el primero como seleccionado principal
@@ -267,18 +511,42 @@ export class NodeRenderer {
     this.selectedNodeId = first || null;
   }
 
+  /**
+   * Enables or disables drag.
+   * @param {boolean} enabled
+   */
   setDragEnabled(enabled) {
     this.dragEnabled = !!enabled;
   }
 
+  /**
+   * Sets selected edge.
+   * @param {Object|null} edge
+   */
+  setSelectedEdge(edge) {
+    this.selectedEdge = edge; // { sourceId, targetId } or null
+  }
+
+  /**
+   * Sets search matches to highlight.
+   * @param {Set} matchesSet
+   */
   setSearchMatches(matchesSet) {
     this.searchMatches = matchesSet || new Set();
   }
 
+  /**
+   * Requests an auto-layout on next render.
+   */
   requestAutoLayout() {
     this.autoLayoutRequested = true;
   }
 
+  /**
+   * Determines if auto-layout should be performed.
+   * @param {Object} scene
+   * @returns {boolean}
+   */
   shouldAutoLayout(scene) {
     if (this.autoLayoutRequested) return true;
     const nodes = Array.from(scene.graph.nodes.values());
@@ -295,6 +563,11 @@ export class NodeRenderer {
     );
   }
 
+  /**
+   * Computes the required height for the graph container.
+   * @param {Object} scene
+   * @returns {number}
+   */
   computeGraphHeight(scene) {
     let maxY = 0;
     scene.graph.nodes.forEach((node) => {
@@ -308,6 +581,13 @@ export class NodeRenderer {
     return Math.max(400, maxY + estimatedNodeHeight + basePadding);
   }
 
+  /**
+   * Computes start and end points for an edge.
+   * @param {DOMRect} fromRect
+   * @param {DOMRect} toRect
+   * @param {DOMRect} containerRect
+   * @returns {{x1: number, y1: number, x2: number, y2: number}}
+   */
   computeEdgePoints(fromRect, toRect, containerRect) {
     const padding = 8;
     const fx = fromRect.left - containerRect.left + fromRect.width / 2;
@@ -350,6 +630,9 @@ export class NodeRenderer {
     return { x1, y1, x2, y2 };
   }
 
+  /**
+   * Redraws edges (used during drag).
+   */
   redrawEdges() {
     const svg = this.lastSvg;
     const container = this.lastNodesContainer;
@@ -358,6 +641,14 @@ export class NodeRenderer {
     this.drawEdges(svg, container, scene);
   }
 
+  /**
+   * Starts drag operation for nodes.
+   * @param {Event} event
+   * @param {Object} node
+   * @param {HTMLElement} nodeEl
+   * @param {HTMLElement} container
+   * @param {HTMLElement} scrollParent
+   */
   startDrag(event, node, nodeEl, container, scrollParent) {
     const scrollRect = scrollParent.getBoundingClientRect();
     const nodeRect = nodeEl.getBoundingClientRect();

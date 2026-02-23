@@ -1,7 +1,16 @@
+/**
+ * StoryEngine.js
+ * Main controller for the game runtime, managing state, scenes, and saving/loading.
+ */
 import { ScenePlayer } from "./ScenePlayer.js";
 import { DialogueHistory } from "./DialogueHistory.js";
 
 export class StoryEngine {
+  /**
+   * @param {Object} projectStore
+   * @param {Object} apiClient
+   * @param {Object} options
+   */
   constructor(projectStore, apiClient, options = {}) {
     this.projectStore = projectStore;
     this.apiClient = apiClient;
@@ -17,6 +26,10 @@ export class StoryEngine {
     this.currentSaveSlot = null; // Slot seleccionado para autosave
   }
 
+  /**
+   * Stops the engine and optionally clears state.
+   * @param {boolean} clearState
+   */
   stop(clearState = true) {
     if (this.playTimeStart) {
       this.totalPlayTime += (Date.now() - this.playTimeStart) / 1000;
@@ -34,6 +47,12 @@ export class StoryEngine {
     }
   }
 
+  /**
+   * Plays a specific scene.
+   * @param {string} sceneId
+   * @param {HTMLElement} containerElement
+   * @param {boolean} preserveState
+   */
   async playScene(sceneId, containerElement, preserveState = false) {
     this.stop(!preserveState);
     this.containerElement = containerElement;
@@ -82,7 +101,7 @@ export class StoryEngine {
       sharedVariables: this.runtimeVariables,
       onSceneChange: (targetSceneId) =>
         this.playScene(targetSceneId, this.containerElement, true),
-      onNodeVisited: (nodeId) => {},
+      onNodeVisited: (nodeId) => { },
     });
     this.player.start();
 
@@ -234,7 +253,7 @@ export class StoryEngine {
       sharedVariables: this.runtimeVariables,
       onSceneChange: (targetSceneId) =>
         this.playScene(targetSceneId, this.containerElement, true),
-      onNodeVisited: (nodeId) => {},
+      onNodeVisited: (nodeId) => { },
       startNodeId: gameState.currentNodeId,
       backgroundImageId: gameState.backgroundImageId,
       characterVisuals: gameState.characterVisuals,

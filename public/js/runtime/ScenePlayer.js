@@ -1,7 +1,27 @@
 import { NODE_TYPES } from "../models/nodes/nodeTypes.js";
+/**
+ * ScenePlayer.js
+ * Core engine component responsible for rendering and playing a single scene.
+ */
 import { DialogueHistory } from "./DialogueHistory.js";
 
 export class ScenePlayer {
+  /**
+   * @param {Object} options
+   * @param {Object} options.project
+   * @param {Object} options.scene
+   * @param {HTMLElement} options.container
+   * @param {string} options.imageBaseUrl
+   * @param {string} options.audioBaseUrl
+   * @param {Function} options.onSceneChange
+   * @param {Function} options.onNodeVisited
+   * @param {Set} options.sharedFlags
+   * @param {Map} options.sharedVariables
+   * @param {string} options.startNodeId
+   * @param {string} options.backgroundImageId
+   * @param {Map} options.characterVisuals
+   * @param {Object} options.dialogueHistory
+   */
   constructor({
     project,
     scene,
@@ -92,6 +112,9 @@ export class ScenePlayer {
     this.pauseMenu = null;
   }
 
+  /**
+   * Stops the scene player.
+   */
   stop() {
     this.stopped = true;
     if (this.resizeObserver) {
@@ -111,6 +134,9 @@ export class ScenePlayer {
     }
   }
 
+  /**
+   * Starts the scene player.
+   */
   start() {
     this.initView();
     this.initCharacterState();
@@ -118,6 +144,9 @@ export class ScenePlayer {
     this.runLoop();
   }
 
+  /**
+   * Initializes the view (canvas and UI).
+   */
   initView() {
     this.container.innerHTML = "";
     const stage = document.createElement("div");
@@ -161,12 +190,18 @@ export class ScenePlayer {
     });
   }
 
+  /**
+   * Sets up the resize observer.
+   */
   setupResizeObserver() {
     if (this.resizeObserver || !this.container) return;
     this.resizeObserver = new ResizeObserver(() => this.handleResize());
     this.resizeObserver.observe(this.container);
   }
 
+  /**
+   * Handles resize events.
+   */
   handleResize() {
     if (this.isResizing) return;
     this.isResizing = true;
@@ -180,6 +215,10 @@ export class ScenePlayer {
     });
   }
 
+  /**
+   * Applies canvas size based on container.
+   * @returns {boolean}
+   */
   applyCanvasSizeFromContainer() {
     if (!this.stageCanvas || !this.stageCtx || !this.container) return false;
     const dpr = window.devicePixelRatio || 1;
@@ -208,6 +247,9 @@ export class ScenePlayer {
     return true;
   }
 
+  /**
+   * Initializes character state from variables.
+   */
   initCharacterState() {
     this.project.characters.forEach((c) => {
       let vars = this.characterVariables.get(c.id);
@@ -223,6 +265,11 @@ export class ScenePlayer {
     });
   }
 
+  /**
+   * Loads an image by ID.
+   * @param {string} imageId
+   * @returns {Promise<HTMLImageElement>}
+   */
   async loadImageById(imageId) {
     if (!imageId) return null;
     if (this.imageCache.has(imageId)) {
@@ -264,6 +311,9 @@ export class ScenePlayer {
     return promise;
   }
 
+  /**
+   * Draws the stage (background and characters).
+   */
   drawStage() {
     if (!this.stageCtx || !this.stageCanvas) return;
     const ctx = this.stageCtx;
@@ -311,6 +361,9 @@ export class ScenePlayer {
     }
   }
 
+  /**
+   * Runs the game loop.
+   */
   async runLoop() {
     while (!this.stopped && this.currentNodeId) {
       const node = this.scene.graph.getNode(this.currentNodeId);
@@ -366,6 +419,11 @@ export class ScenePlayer {
     }
   }
 
+  /**
+   * Gets the dialogue position from node or default.
+   * @param {Object} node
+   * @returns {string}
+   */
   getDialoguePosition(node = null) {
     const pos = node?.dialoguePosition;
     if (
@@ -378,12 +436,21 @@ export class ScenePlayer {
     return "bottom";
   }
 
+  /**
+   * Sets the UI position class.
+   * @param {string} position
+   */
   setUIPositionClass(position) {
     if (!this.ui) return;
     const pos = position || this.getDialoguePosition();
     this.ui.className = `play-ui play-ui-${pos}`;
   }
 
+  /**
+   * Applies styles to the dialogue box.
+   * @param {HTMLElement} element
+   * @param {string} position
+   */
   applyDialogueBoxStyle(element, position) {
     const pos = position || this.getDialoguePosition();
     element.classList.add("play-dialogue");
@@ -430,6 +497,10 @@ export class ScenePlayer {
     }
   }
 
+  /**
+   * Adds a continue button (for testing/fallback).
+   * @returns {Promise}
+   */
   addContinueButton() {
     return new Promise((resolve) => {
       const btn = document.createElement("button");
@@ -448,6 +519,10 @@ export class ScenePlayer {
     });
   }
 
+  /**
+   * Handles a dialogue node.
+   * @param {Object} node
+   */
   async handleDialogue(node) {
     const char = node.characterId
       ? this.charactersById.get(node.characterId) || null
@@ -514,6 +589,11 @@ export class ScenePlayer {
     this.currentNodeId = node.nextNodeIds[0] || null;
   }
 
+  /**
+   * Waits for user interaction to advance.
+   * @param {HTMLElement} element
+   * @returns {Promise}
+   */
   async waitForAdvance(element) {
     return new Promise((resolve) => {
       // Handler para clic
@@ -541,6 +621,13 @@ export class ScenePlayer {
     });
   }
 
+  /**
+   * Runs typewriter effect on text.
+   * @param {HTMLElement} element
+   * @param {string} text
+   * @param {number} speed
+   * @returns {Promise}
+   */
   async typewriterEffect(element, text, speed) {
     return new Promise((resolve) => {
       let index = 0;
@@ -582,6 +669,10 @@ export class ScenePlayer {
     });
   }
 
+  /**
+   * Handles player options node.
+   * @param {Object} node
+   */
   async handleOptions(node) {
     this.clearUI();
     const position = this.getDialoguePosition();
@@ -796,7 +887,7 @@ export class ScenePlayer {
         try {
           audio.pause();
           audio.currentTime = 0;
-        } catch {}
+        } catch { }
         this.activeAudio.delete(node.audioId);
       }
     } else if (action === "play") {
@@ -819,8 +910,8 @@ export class ScenePlayer {
           audio.volume = Math.max(0, Math.min(1, vol));
           try {
             audio.currentTime = 0;
-          } catch {}
-          audio.play().catch(() => {});
+          } catch { }
+          audio.play().catch(() => { });
         }
       }
     }
@@ -923,6 +1014,11 @@ export class ScenePlayer {
     });
   }
 
+  /**
+   * Normalizes height percent.
+   * @param {string|number} rawValue
+   * @returns {number}
+   */
   normalizeHeightPercent(rawValue) {
     const parsed = Number.parseFloat(rawValue);
     if (Number.isNaN(parsed)) {
@@ -931,13 +1027,16 @@ export class ScenePlayer {
     return Math.min(100, Math.max(0, parsed));
   }
 
+  /**
+   * Stops all active audio.
+   */
   stopAllAudio() {
     if (!this.activeAudio) return;
     this.activeAudio.forEach((audio) => {
       try {
         audio.pause();
         audio.currentTime = 0;
-      } catch {}
+      } catch { }
     });
     this.activeAudio.clear();
   }

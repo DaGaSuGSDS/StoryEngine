@@ -1,6 +1,15 @@
+/**
+ * nodeTypeConverter.js
+ * Utilities for converting nodes between different types.
+ */
 import { NODE_TYPES } from "../../../models/nodes/nodeTypes.js";
 import { DEFAULT_VALUES } from "./constants.js";
 
+/**
+ * Converts a node to a new type, preserving compatible properties.
+ * @param {Object} node
+ * @param {string} newType
+ */
 export function convertNodeType(node, newType) {
   const oldNext = Array.isArray(node.nextNodeIds)
     ? node.nextNodeIds.slice()
@@ -107,7 +116,7 @@ export function convertNodeType(node, newType) {
       node.imageId = node.imageId || null;
       node.fadeDuration =
         typeof node.fadeDuration === "number" &&
-        !Number.isNaN(node.fadeDuration)
+          !Number.isNaN(node.fadeDuration)
           ? node.fadeDuration
           : DEFAULT_VALUES.FADE_DURATION;
       setSingleNext();

@@ -1,3 +1,10 @@
+/**
+ * idGenerator.js
+ * Utility for generating unique identifiers.
+ */
+/**
+ * Genera un ID único basado en timestamp y random.
+ */
 let counter = 0;
 
 export function generateId(prefix) {
@@ -5,4 +12,3 @@ export function generateId(prefix) {
   const ts = Date.now();
   return `${prefix}_${ts}_${counter}`;
 }
-

@@ -1,4 +1,8 @@
 export class CharactersTab {
+  /**
+   * @param {Object} projectStore
+   * @param {Object} apiClient
+   */
   constructor(projectStore, apiClient) {
     this.projectStore = projectStore;
     this.apiClient = apiClient || null;
@@ -7,6 +11,10 @@ export class CharactersTab {
     this.unsubscribe = this.projectStore.subscribe(() => this.refresh());
   }
 
+  /**
+   * Renders the tab.
+   * @returns {HTMLElement}
+   */
   render() {
     if (!this.unsubscribe) {
       this.unsubscribe = this.projectStore.subscribe(() => this.refresh());
@@ -46,6 +54,11 @@ export class CharactersTab {
     return this.root;
   }
 
+  /**
+   * Attaches handlers to buttons.
+   * @param {HTMLElement} leftPanel
+   * @param {HTMLElement} rightPanel
+   */
   attachHandlers(leftPanel, rightPanel) {
     leftPanel.querySelector("#char-add").addEventListener("click", () => {
       this.projectStore.addCharacter();
@@ -61,12 +74,18 @@ export class CharactersTab {
       });
   }
 
+  /**
+   * Refreshes the view.
+   */
   refresh() {
     if (!this.root) return;
     this.renderCharacterList();
     this.renderCharacterDetails();
   }
 
+  /**
+   * Cleans up subscriptions.
+   */
   destroy() {
     if (this.unsubscribe) {
       this.unsubscribe();
@@ -74,6 +93,9 @@ export class CharactersTab {
     }
   }
 
+  /**
+   * Renders the list of characters.
+   */
   renderCharacterList() {
     const ul = this.root.querySelector("#char-list");
     if (!ul) return;
@@ -94,6 +116,9 @@ export class CharactersTab {
     });
   }
 
+  /**
+   * Renders the details of selected character.
+   */
   renderCharacterDetails() {
     const container = this.root.querySelector("#char-details");
     if (!container) return;
@@ -247,8 +272,7 @@ export class CharactersTab {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td><input data-idx="${index}" data-field="name" value="${v.name}" /></td>
-        <td><input data-idx="${index}" data-field="value" type="number" value="${
-          v.value
+        <td><input data-idx="${index}" data-field="value" type="number" value="${v.value
         }" /></td>
         <td><button data-idx="${index}" class="btn small">X</button></td>
       `;
@@ -289,6 +313,11 @@ export class CharactersTab {
     });
   }
 
+  /**
+   * Clamps height percentage between 0 and 100.
+   * @param {string|number} rawValue
+   * @returns {number}
+   */
   clampHeightPercent(rawValue) {
     const parsed = Number.parseFloat(rawValue);
     if (Number.isNaN(parsed)) {
@@ -297,6 +326,11 @@ export class CharactersTab {
     return Math.min(100, Math.max(0, parsed));
   }
 
+  /**
+   * Gets image URL for an asset ID.
+   * @param {string} imageId
+   * @returns {string|null}
+   */
   getImageUrl(imageId) {
     if (!imageId || !this.projectStore.project || !this.apiClient) return null;
     const asset = this.projectStore.images.find((img) => img.id === imageId);
@@ -307,6 +341,11 @@ export class CharactersTab {
     )}/images/${encodeURIComponent(asset.fileName)}`;
   }
 
+  /**
+   * Opens a preview modal for character state.
+   * @param {Object} character
+   * @param {Object} state
+   */
   openStatePreview(character, state) {
     if (!state) return;
     const heightPercent = this.clampHeightPercent(state.heightPercent);

@@ -1,10 +1,21 @@
+/**
+ * DeleteNodeCommand.js
+ * Command to remove a node from the graph.
+ */
 import { Command } from "./Command.js";
 import {
   serializeNode,
   createNodeFromRaw,
 } from "../models/nodes/nodeFactory.js";
 
+/**
+ * Command to delete a node from the scene.
+ */
 export class DeleteNodeCommand extends Command {
+  /**
+   * @param {Scene} scene - Target scene.
+   * @param {string} nodeId - ID of node to delete.
+   */
   constructor(scene, nodeId) {
     super();
     this.scene = scene;
@@ -14,6 +25,9 @@ export class DeleteNodeCommand extends Command {
     this.affectedConnections = [];
   }
 
+  /**
+   * Removes the node and saves state for undo.
+   */
   execute() {
     const node = this.scene.graph.getNode(this.nodeId);
     if (!node) {
@@ -42,6 +56,9 @@ export class DeleteNodeCommand extends Command {
     return true;
   }
 
+  /**
+   * Restores the node and connections.
+   */
   undo() {
     if (!this.nodeSnapshot) {
       return false;
@@ -64,6 +81,9 @@ export class DeleteNodeCommand extends Command {
     return true;
   }
 
+  /**
+   * @returns {string} Description.
+   */
   description() {
     return `Eliminar nodo: ${this.nodeSnapshot?.name || this.nodeId}`;
   }

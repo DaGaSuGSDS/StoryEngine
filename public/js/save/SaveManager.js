@@ -1,3 +1,7 @@
+/**
+ * SaveManager.js
+ * Manager for persisting game data to the file system (Electron).
+ */
 import { GameState } from "./GameState.js";
 
 /**
@@ -5,6 +9,9 @@ import { GameState } from "./GameState.js";
  * Solo funciona en el juego exportado con Electron
  */
 export class SaveManager {
+  /**
+   * @param {string} projectId
+   */
   constructor(projectId) {
     this.projectId = projectId;
     this.isElectron = this.detectElectron();
@@ -20,6 +27,9 @@ export class SaveManager {
   /**
    * Espera a que la inicialización termine
    */
+  /**
+   * Waits for initialization to complete.
+   */
   async ensureInitialized() {
     if (this.initPromise) {
       await this.initPromise;
@@ -28,6 +38,10 @@ export class SaveManager {
 
   /**
    * Detecta si estamos corriendo en Electron
+   */
+  /**
+   * Detects if running in Electron.
+   * @returns {boolean}
    */
   detectElectron() {
     return !!(
@@ -39,6 +53,9 @@ export class SaveManager {
 
   /**
    * Inicializa el directorio de guardados
+   */
+  /**
+   * Initializes the saves directory.
    */
   async initializeSavesDirectory() {
     if (!this.isElectron) {
@@ -60,6 +77,12 @@ export class SaveManager {
 
   /**
    * Guarda el estado del juego en un slot
+   */
+  /**
+   * Saves game state to a slot.
+   * @param {number} slotNumber
+   * @param {Object} gameState
+   * @returns {Promise<boolean>}
    */
   async saveGame(slotNumber, gameState) {
     await this.ensureInitialized();
@@ -96,6 +119,11 @@ export class SaveManager {
   /**
    * Carga el estado del juego desde un slot
    */
+  /**
+   * Loads game state from a slot.
+   * @param {number} slotNumber
+   * @returns {Promise<Object|null>}
+   */
   async loadGame(slotNumber) {
     await this.ensureInitialized();
 
@@ -131,6 +159,11 @@ export class SaveManager {
   /**
    * Elimina un guardado
    */
+  /**
+   * Deletes a save slot.
+   * @param {number} slotNumber
+   * @returns {Promise<boolean>}
+   */
   async deleteSave(slotNumber) {
     await this.ensureInitialized();
 
@@ -158,6 +191,10 @@ export class SaveManager {
 
   /**
    * Lista todos los guardados disponibles
+   */
+  /**
+   * Lists all available saves.
+   * @returns {Promise<Array>}
    */
   async listSaves() {
     await this.ensureInitialized();
@@ -191,6 +228,11 @@ export class SaveManager {
   /**
    * Verifica si existe un guardado en un slot
    */
+  /**
+   * Checks if a save exists in a slot.
+   * @param {number} slotNumber
+   * @returns {Promise<boolean>}
+   */
   async hasSave(slotNumber) {
     await this.ensureInitialized();
 
@@ -211,6 +253,11 @@ export class SaveManager {
   /**
    * Obtiene el nombre de archivo para un slot
    */
+  /**
+   * Gets filename for a slot.
+   * @param {number} slotNumber
+   * @returns {string}
+   */
   getSlotFilename(slotNumber) {
     if (slotNumber === this.quickSaveSlot || slotNumber === this.autoSaveSlot) {
       return `${slotNumber}.save`;
@@ -220,6 +267,10 @@ export class SaveManager {
 
   /**
    * Verifica si el sistema de guardado está disponible
+   */
+  /**
+   * Checks if save system is available.
+   * @returns {boolean}
    */
   isAvailable() {
     return this.isElectron && this.savesDir !== null;

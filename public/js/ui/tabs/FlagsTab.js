@@ -1,4 +1,12 @@
+/**
+ * FlagsTab.js
+ * UI component for managing boolean flags (game variables).
+ */
+import { Flag } from "../../models/Flag.js";
 export class FlagsTab {
+  /**
+   * @param {Object} projectStore
+   */
   constructor(projectStore) {
     this.projectStore = projectStore;
     this.root = null;
@@ -6,6 +14,10 @@ export class FlagsTab {
     this.unsubscribe = this.projectStore.subscribe(() => this.refresh());
   }
 
+  /**
+   * Renders the tab.
+   * @returns {HTMLElement}
+   */
   render() {
     if (!this.unsubscribe) {
       this.unsubscribe = this.projectStore.subscribe(() => this.refresh());
@@ -38,6 +50,9 @@ export class FlagsTab {
     return this.root;
   }
 
+  /**
+   * Refreshes the list of flags.
+   */
   refresh() {
     if (!this.root) return;
     const tbody = this.root.querySelector("#flags-table tbody");
@@ -72,6 +87,9 @@ export class FlagsTab {
     });
   }
 
+  /**
+   * Cleans up subscriptions.
+   */
   destroy() {
     if (this.unsubscribe) {
       this.unsubscribe();

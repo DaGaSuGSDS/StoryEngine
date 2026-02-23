@@ -1,3 +1,11 @@
+/**
+ * saveSettings.js
+ * Renders settings related to the save/load system appearance.
+ */
+/**
+ * Validates and normalizes a hex color string.
+ * Supports 3-digit shorthand expansion (e.g. #abc -> #aabbcc).
+ */
 const sanitizeHexColor = (value, fallback) => {
   if (typeof value !== "string") return fallback;
   const short = value.match(/^#([0-9a-fA-F]{3})$/);
@@ -9,6 +17,9 @@ const sanitizeHexColor = (value, fallback) => {
   return full ? full[0] : fallback;
 };
 
+/**
+ * Clamps a numerical value between simple min/max bounds.
+ */
 const clampNumber = (rawValue, fallback, min, max) => {
   const parsed = Number.parseFloat(rawValue);
   const baseValue = Number.isNaN(parsed) ? fallback : parsed;
@@ -26,6 +37,13 @@ const getCheckboxValue = (container, selector, fallback = false) => {
   return el?.checked !== undefined ? el.checked : fallback;
 };
 
+/**
+ * Reads settings from the settings form and applies them to the settings object.
+ * Handles validation, sanitization, and type conversion for all fields.
+ * @param {HTMLElement} container - The container with form inputs.
+ * @param {Object} settings - The settings object to update.
+ * @returns {Object} The updated settings object.
+ */
 export function applySettingsFromForm(container, settings) {
   if (!container || !settings) return settings;
 

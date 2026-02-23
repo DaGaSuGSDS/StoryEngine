@@ -1,7 +1,21 @@
+/**
+ * AnimationNode.js
+ * Node representing an animation event.
+ */
 import { BaseNode } from "./BaseNode.js";
 import { NODE_TYPES } from "./nodeTypes.js";
 
+/**
+ * Node for playing character animations.
+ */
 export class AnimationNode extends BaseNode {
+  /**
+   * @param {Object} data - Node data.
+   * @param {string} [data.animationType] - Type of animation.
+   * @param {string|Object} [data.effect] - Visual effect.
+   * @param {string} [data.characterId] - Character ID.
+   * @param {Array} [data.animations] - List of animations.
+   */
   constructor({
     id,
     name,

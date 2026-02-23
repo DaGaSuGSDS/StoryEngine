@@ -1,3 +1,7 @@
+/**
+ * nodeFactory.js
+ * Factory functions for creating and serializing node instances.
+ */
 import { BaseNode } from "./BaseNode.js";
 import { AnimationNode } from "./AnimationNode.js";
 import { DialogueNode } from "./DialogueNode.js";
@@ -14,6 +18,11 @@ import { SetCharacterStateNode } from "./SetCharacterStateNode.js";
 import { RandomNode } from "./RandomNode.js";
 import { NODE_TYPES } from "./nodeTypes.js";
 
+/**
+ * Factory to create specific Node types from raw data.
+ * @param {Object} raw - Raw node data.
+ * @returns {BaseNode} Specific Node instance.
+ */
 export function createNodeFromRaw(raw) {
   const common = {
     id: raw.id,
@@ -113,6 +122,11 @@ export function createNodeFromRaw(raw) {
   }
 }
 
+/**
+ * Serializes a Node instance to a raw object.
+ * @param {BaseNode} node - Node instance.
+ * @returns {Object} Raw node data.
+ */
 export function serializeNode(node) {
   const base = {
     id: node.id,

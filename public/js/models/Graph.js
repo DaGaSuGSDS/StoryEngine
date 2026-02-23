@@ -1,12 +1,27 @@
+/**
+ * Graph.js
+ * Model representing the node graph structure of a scene.
+ */
 import { createNodeFromRaw, serializeNode } from "./nodes/nodeFactory.js";
 
+/**
+ * Represents the node graph of a scene.
+ */
 export class Graph {
+  /**
+   * Initializes a new Graph.
+   */
   constructor() {
     this.nodes = new Map();
     this.startNodeId = null;
     this.originCentered = true;
   }
 
+  /**
+   * Creates a Graph instance from raw data.
+   * @param {Object} raw - Raw data.
+   * @returns {Graph} Graph instance.
+   */
   static fromRaw(raw) {
     const g = new Graph();
     g.startNodeId = raw.startNodeId || null;
@@ -25,6 +40,10 @@ export class Graph {
     return g;
   }
 
+  /**
+   * Converts the graph to a raw object.
+   * @returns {Object} Raw data.
+   */
   toRaw() {
     return {
       startNodeId: this.startNodeId,
@@ -33,10 +52,19 @@ export class Graph {
     };
   }
 
+  /**
+   * Adds a node to the graph.
+   * @param {Object} node - Node instance to add.
+   */
   addNode(node) {
     this.nodes.set(node.id, node);
   }
 
+  /**
+   * Removes a node from the graph.
+   * Also removes connections to this node from other nodes.
+   * @param {string} nodeId - ID of the node to remove.
+   */
   removeNode(nodeId) {
     this.nodes.delete(nodeId);
     for (const node of this.nodes.values()) {
@@ -44,6 +72,11 @@ export class Graph {
     }
   }
 
+  /**
+   * Gets a node by ID.
+   * @param {string} id - Node ID.
+   * @returns {Object|null} Node instance or null.
+   */
   getNode(id) {
     return this.nodes.get(id) || null;
   }

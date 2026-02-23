@@ -1,4 +1,8 @@
 /**
+ * ProjectSettings.js
+ * Definitions and validation for project configuration settings.
+ */
+/**
  * Normaliza colores hex a formato #rrggbb. Si no es válido, devuelve el fallback.
  */
 const sanitizeHexColor = (value, fallback) => {
@@ -16,6 +20,9 @@ const sanitizeHexColor = (value, fallback) => {
  * ProjectSettings - Configuración del proyecto exportado
  */
 export class ProjectSettings {
+  /**
+   * @param {Object} data - Settings data.
+   */
   constructor(data = {}) {
     // Información básica
     this.gameTitle = data.gameTitle || "Mi Juego";
@@ -304,6 +311,10 @@ export class ProjectSettings {
       data.pauseButtonRadius !== undefined ? data.pauseButtonRadius : 4;
   }
 
+  /**
+   * Converts settings to JSON object.
+   * @returns {Object} JSON object.
+   */
   toJSON() {
     return {
       gameTitle: this.gameTitle,
@@ -379,6 +390,11 @@ export class ProjectSettings {
     };
   }
 
+  /**
+   * Creates ProjectSettings from JSON.
+   * @param {Object} json - JSON object.
+   * @returns {ProjectSettings} ProjectSettings instance.
+   */
   static fromJSON(json) {
     return new ProjectSettings(json);
   }

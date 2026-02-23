@@ -2,6 +2,10 @@
  * DialogueHistory - Sistema de historial de diálogos (Backlog)
  * Permite a los jugadores revisar diálogos anteriores
  */
+/**
+ * DialogueHistory.js
+ * Manages the log of past dialogue for the player to review.
+ */
 export class DialogueHistory {
   constructor(maxEntries = 100) {
     this.history = [];

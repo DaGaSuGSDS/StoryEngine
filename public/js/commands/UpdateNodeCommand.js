@@ -1,6 +1,18 @@
+/**
+ * UpdateNodeCommand.js
+ * Command to update the properties of a node.
+ */
 import { Command } from "./Command.js";
 
+/**
+ * Command to update properties of a node.
+ */
 export class UpdateNodeCommand extends Command {
+  /**
+   * @param {Scene} scene - Target scene.
+   * @param {string} nodeId - ID of node to update.
+   * @param {Object} updates - Object with properties to update.
+   */
   constructor(scene, nodeId, updates) {
     super();
     this.scene = scene;
@@ -9,6 +21,9 @@ export class UpdateNodeCommand extends Command {
     this.previousValues = {};
   }
 
+  /**
+   * Applies updates to the node.
+   */
   execute() {
     const node = this.scene.graph.getNode(this.nodeId);
     if (!node) {
@@ -24,6 +39,9 @@ export class UpdateNodeCommand extends Command {
     return true;
   }
 
+  /**
+   * Reverts updates.
+   */
   undo() {
     const node = this.scene.graph.getNode(this.nodeId);
     if (!node) {
@@ -35,6 +53,9 @@ export class UpdateNodeCommand extends Command {
     return true;
   }
 
+  /**
+   * @returns {string} Description.
+   */
   description() {
     const keys = Object.keys(this.updates).join(", ");
     return `Actualizar nodo: ${keys}`;

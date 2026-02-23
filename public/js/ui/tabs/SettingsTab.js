@@ -1,5 +1,9 @@
 import { ProjectSettings } from "../../models/ProjectSettings.js";
-import { showInfo } from "../notifications.js";
+/**
+ * SettingsTab.js
+ * UI component for configuring project settings.
+ */
+import { showError, showInfo } from "../notifications.js";
 import { renderBasicInfoSection } from "./settings/basicInfoSection.js";
 import {
   renderDialogueSection,
@@ -28,6 +32,10 @@ import {
 import { applySettingsFromForm } from "./settings/saveSettings.js";
 
 export class SettingsTab {
+  /**
+   * @param {Object} projectStore
+   * @param {Object} apiClient
+   */
   constructor(projectStore, apiClient = null) {
     this.projectStore = projectStore;
     this.apiClient = apiClient;
@@ -37,6 +45,10 @@ export class SettingsTab {
     this.container = null;
   }
 
+  /**
+   * Renders the settings form.
+   * @returns {HTMLElement}
+   */
   render() {
     const container = document.createElement("div");
     container.style.width = "100%";
@@ -63,15 +75,15 @@ export class SettingsTab {
           <span class="settings-save-status" id="settings-save-status"></span>
         </div>
         ${renderBasicInfoSection(
-          this.settings,
-          this.renderImageOptions(this.settings.iconId)
-        )}
+      this.settings,
+      this.renderImageOptions(this.settings.iconId)
+    )}
         ${renderFeaturesSection(this.settings)}
         ${renderGameOptionsSection(this.settings)}
         ${renderStartScreenSection(
-          this.settings,
-          this.renderImageOptions(this.settings.startScreenImageId)
-        )}
+      this.settings,
+      this.renderImageOptions(this.settings.startScreenImageId)
+    )}
         ${renderMenuStyleSection(this.settings)}
         ${renderDialogueSection(this.settings)}
         ${renderPauseMenuSection(this.settings)}
@@ -84,19 +96,28 @@ export class SettingsTab {
     return container;
   }
 
+  /**
+   * Generates optional HTML for images.
+   * @param {string|null} selectedId
+   * @returns {string}
+   */
   renderImageOptions(selectedId = null) {
     if (!this.projectStore.project.images) return "";
 
     return this.projectStore.project.images
       .map(
         (img) =>
-          `<option value="${img.id}" ${
-            selectedId === img.id ? "selected" : ""
+          `<option value="${img.id}" ${selectedId === img.id ? "selected" : ""
           } data-filename="${img.fileName || ""}">${img.name}</option>`
       )
       .join("");
   }
 
+  /**
+   * Gets image URL.
+   * @param {string} imageId
+   * @returns {string|null}
+   */
   getImageUrl(imageId) {
     if (!imageId || !this.projectStore.project) return null;
     const asset = (this.projectStore.project.images || []).find(
@@ -112,6 +133,10 @@ export class SettingsTab {
     )}/images/${encodeURIComponent(asset.fileName)}`;
   }
 
+  /**
+   * Gets URL of first image (fallback).
+   * @returns {string|null}
+   */
   getFirstImageUrl() {
     if (!this.projectStore.project) return null;
     const asset = (this.projectStore.project.images || [])[0];
@@ -119,6 +144,10 @@ export class SettingsTab {
     return this.getImageUrl(asset.id);
   }
 
+  /**
+   * Attaches UI event listeners.
+   * @param {HTMLElement} container
+   */
   attachEventListeners(container) {
     const toggles = container.querySelectorAll(".collapse-toggle");
     toggles.forEach((btn) => {
@@ -138,6 +167,10 @@ export class SettingsTab {
     this.attachAutoSaveListeners(container);
   }
 
+  /**
+   * Updates preview components.
+   * @param {HTMLElement} container
+   */
   updatePreview(container) {
     updateDialoguePreview(container);
     updatePausePreview(container);
@@ -149,6 +182,10 @@ export class SettingsTab {
     updateMenuSavePreview(container, this.settings);
   }
 
+  /**
+   * Attaches listeners for auto-save.
+   * @param {HTMLElement} container
+   */
   attachAutoSaveListeners(container) {
     const autoSaveInputs = container.querySelectorAll(
       ".settings-section-body input, .settings-section-body select, .settings-section-body textarea"
@@ -176,6 +213,10 @@ export class SettingsTab {
     });
   }
 
+  /**
+   * Schedules an auto-save operation.
+   * @param {HTMLElement} container
+   */
   scheduleAutoSave(container) {
     if (this.autoSaveTimeout) clearTimeout(this.autoSaveTimeout);
     this.setStatus(container, "Guardando...");
@@ -184,6 +225,11 @@ export class SettingsTab {
     }, 350);
   }
 
+  /**
+   * Updates save status text.
+   * @param {HTMLElement} container
+   * @param {string} text
+   */
   setStatus(container, text) {
     const statusEl = container.querySelector("#settings-save-status");
     if (!statusEl) return;
@@ -197,6 +243,11 @@ export class SettingsTab {
     }
   }
 
+  /**
+   * Saves settings to project store.
+   * @param {HTMLElement} container
+   * @param {Object} options
+   */
   saveSettings(container, { silent = false } = {}) {
     if (!this.settings || !this.projectStore.project) return;
     const before = JSON.stringify(this.settings);
@@ -213,6 +264,9 @@ export class SettingsTab {
     }
   }
 
+  /**
+   * Flushes any pending auto-save.
+   */
   flushPendingSave() {
     if (!this.container) return;
     if (this.autoSaveTimeout) {
@@ -222,6 +276,9 @@ export class SettingsTab {
     this.saveSettings(this.container, { silent: true });
   }
 
+  /**
+   * Cleans up timeouts.
+   */
   destroy() {
     this.flushPendingSave();
     if (this.autoSaveTimeout) clearTimeout(this.autoSaveTimeout);

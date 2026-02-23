@@ -1,3 +1,7 @@
+/**
+ * pauseMenuSection.js
+ * Renders settings for the in-game pause menu.
+ */
 export const PAUSE_STYLE_INPUT_IDS = [
   "pause-overlay-color",
   "pause-overlay-opacity",
@@ -14,6 +18,11 @@ export const PAUSE_STYLE_INPUT_IDS = [
   "pause-button-radius",
 ];
 
+/**
+ * Renders the settings section for Pause Menu styling.
+ * @param {Object} settings - Current project settings.
+ * @returns {string} HTML string.
+ */
 export function renderPauseMenuSection(settings) {
   return `
     <section class="settings-section" data-section="pause-menu">
@@ -98,6 +107,10 @@ export function renderPauseMenuSection(settings) {
   `;
 }
 
+/**
+ * Updates the live preview of the Pause Menu.
+ * @param {HTMLElement} container - The settings tab container.
+ */
 export function updatePausePreview(container) {
   const overlay = container.querySelector("#pause-preview-overlay");
   const menu = container.querySelector("#pause-preview-menu");

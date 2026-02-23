@@ -10,14 +10,28 @@ import {
 import { AddNodeCommand } from "../../../commands/AddNodeCommand.js";
 import { DeleteNodeCommand } from "../../../commands/DeleteNodeCommand.js";
 
+/**
+ * ContextMenuManager.js
+ * Manages context menus for the graph editor (right-click actions).
+ */
 export class ContextMenuManager {
+  /**
+   * @param {Object} projectStore
+   * @param {Function} onCreateNode
+   * @param {Function} onDuplicateNode
+   * @param {Function} onDeleteNode
+   * @param {Function} [onDuplicateMany]
+   * @param {Function} [onDeleteMany]
+   * @param {Function} [onDeleteEdge]
+   */
   constructor(
     projectStore,
     onCreateNode,
     onDuplicateNode,
     onDeleteNode,
     onDuplicateMany = null,
-    onDeleteMany = null
+    onDeleteMany = null,
+    onDeleteEdge = null
   ) {
     this.projectStore = projectStore;
     this.onCreateNode = onCreateNode;
@@ -25,10 +39,18 @@ export class ContextMenuManager {
     this.onDeleteNode = onDeleteNode;
     this.onDuplicateMany = onDuplicateMany;
     this.onDeleteMany = onDeleteMany;
+    this.onDeleteEdge = onDeleteEdge;
     this.contextMenu = null;
     this.selectionIds = null;
   }
 
+  /**
+   * Shows context menu for the canvas (e.g. create node).
+   * @param {number} x
+   * @param {number} y
+   * @param {HTMLElement} graphCanvas
+   * @param {Event} event
+   */
   showCanvasContextMenu(x, y, graphCanvas, event) {
     this.closeContextMenu();
 
@@ -75,6 +97,13 @@ export class ContextMenuManager {
     }
   }
 
+  /**
+   * Shows context menu for a node.
+   * @param {number} x
+   * @param {number} y
+   * @param {string} nodeId
+   * @param {Object} options
+   */
   showNodeContextMenu(x, y, nodeId, { selectionIds = null } = {}) {
     this.closeContextMenu();
     this.selectionIds = Array.isArray(selectionIds) ? selectionIds : null;
@@ -136,6 +165,48 @@ export class ContextMenuManager {
     }
   }
 
+  /**
+   * Shows context menu for an edge.
+   * @param {number} x
+   * @param {number} y
+   * @param {string} sourceId
+   * @param {string} targetId
+   */
+  showEdgeContextMenu(x, y, sourceId, targetId) {
+    this.closeContextMenu();
+
+    const menu = document.createElement("div");
+    menu.className = "context-menu";
+    menu.style.left = `${x}px`;
+    menu.style.top = `${y}px`;
+
+    const deleteItem = document.createElement("div");
+    deleteItem.className = "context-menu-item";
+    deleteItem.textContent = "Eliminar Conexión";
+    deleteItem.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (this.onDeleteEdge) {
+        this.onDeleteEdge(sourceId, targetId);
+      }
+      this.closeContextMenu();
+    });
+    menu.appendChild(deleteItem);
+
+    document.body.appendChild(menu);
+    this.contextMenu = menu;
+
+    const rect = menu.getBoundingClientRect();
+    if (rect.right > window.innerWidth) {
+      menu.style.left = `${x - rect.width}px`;
+    }
+    if (rect.bottom > window.innerHeight) {
+      menu.style.top = `${y - rect.height}px`;
+    }
+  }
+
+  /**
+   * Closes any open context menu.
+   */
   closeContextMenu() {
     if (this.contextMenu) {
       this.contextMenu.remove();
@@ -143,6 +214,12 @@ export class ContextMenuManager {
     }
   }
 
+  /**
+   * Creates a new node at specific position.
+   * @param {string} type
+   * @param {number} x
+   * @param {number} y
+   */
   createNodeAtPosition(type, x, y) {
     const scene = this.projectStore.currentScene;
     if (!scene) return;
@@ -171,6 +248,10 @@ export class ContextMenuManager {
     }
   }
 
+  /**
+   * Duplicates a node.
+   * @param {string} nodeId
+   */
   duplicateNode(nodeId) {
     const scene = this.projectStore.currentScene;
     if (!scene) return;
@@ -197,6 +278,10 @@ export class ContextMenuManager {
     showInfo("Nodo duplicado correctamente", 2000);
   }
 
+  /**
+   * Deletes a single node.
+   * @param {string} nodeId
+   */
   deleteSingleNode(nodeId) {
     const scene = this.projectStore.currentScene;
     if (!scene) {
@@ -219,6 +304,9 @@ export class ContextMenuManager {
     }
   }
 
+  /**
+   * Cleans up.
+   */
   destroy() {
     this.closeContextMenu();
   }

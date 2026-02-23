@@ -1,3 +1,12 @@
+/**
+ * gameOptionsSection.js
+ * Renders general game configuration options (resolution, global features).
+ */
+/**
+ * Renders the "Features" section (toggles for major systems).
+ * @param {Object} settings - Current project settings.
+ * @returns {string} HTML string.
+ */
 export function renderFeaturesSection(settings) {
   return `
     <section class="settings-section" data-section="features">
@@ -8,9 +17,8 @@ export function renderFeaturesSection(settings) {
       <div class="settings-section-body">
         <div class="form-group checkbox-group">
           <label>
-            <input type="checkbox" id="enable-save-load" ${
-              settings.enableSaveLoad ? "checked" : ""
-            } />
+            <input type="checkbox" id="enable-save-load" ${settings.enableSaveLoad ? "checked" : ""
+    } />
             Habilitar Guardado y Carga
           </label>
           <small>Permite el sistema de guardado/carga en el juego exportado</small>
@@ -18,9 +26,8 @@ export function renderFeaturesSection(settings) {
 
         <div class="form-group checkbox-group">
           <label>
-            <input type="checkbox" id="enable-backlog" ${
-              settings.enableBacklog ? "checked" : ""
-            } />
+            <input type="checkbox" id="enable-backlog" ${settings.enableBacklog ? "checked" : ""
+    } />
             Habilitar Historial de Diálogos
           </label>
           <small>Permite revisar diálogos anteriores (presiona ESC en el juego)</small>
@@ -30,6 +37,11 @@ export function renderFeaturesSection(settings) {
   `;
 }
 
+/**
+ * Renders general gameplay options (speed, resolution).
+ * @param {Object} settings - Current project settings.
+ * @returns {string} HTML string.
+ */
 export function renderGameOptionsSection(settings) {
   return `
     <section class="settings-section" data-section="game-options">
@@ -56,9 +68,8 @@ export function renderGameOptionsSection(settings) {
 
         <div class="form-group checkbox-group">
           <label>
-            <input type="checkbox" id="window-resizable" ${
-              settings.resizable ? "checked" : ""
-            } />
+            <input type="checkbox" id="window-resizable" ${settings.resizable ? "checked" : ""
+    } />
             Ventana Redimensionable
           </label>
         </div>
