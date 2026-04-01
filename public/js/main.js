@@ -11,6 +11,7 @@ import { FlagsTab } from "./ui/tabs/FlagsTab.js";
 import { ImagesTab } from "./ui/tabs/ImagesTab.js";
 import { AudioTab } from "./ui/tabs/AudioTab.js";
 import { SettingsTab } from "./ui/tabs/SettingsTab.js";
+import { HistoryTab } from "./ui/tabs/HistoryTab.js";
 import { StoryEngine } from "./runtime/StoryEngine.js";
 import { showError, showInfo } from "./ui/notifications.js";
 
@@ -37,6 +38,7 @@ const tabManager = new TabManager(document.getElementById("tab-content"), {
   images: new ImagesTab(projectStore, apiClient),
   audio: new AudioTab(projectStore, apiClient),
   settings: new SettingsTab(projectStore, apiClient),
+  history: new HistoryTab(projectStore, apiClient),
 });
 
 /**

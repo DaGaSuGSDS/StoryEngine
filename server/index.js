@@ -14,6 +14,7 @@ app.use(express.json(config.bodyParser));
 const projectRoutes = require("./routes/projectRoutes");
 const assetRoutes = require("./routes/assetRoutes");
 const exportRoutes = require("./routes/exportRoutes");
+const gitRoutes = require("./routes/gitRoutes");
 
 // Definición de directorios estáticos
 const publicDir = config.paths.public;
@@ -30,8 +31,9 @@ app.use("/projects", express.static(projectsDir));
 
 // Montar rutas de API
 app.use("/api/projects", projectRoutes);
-app.use("/api/projects", assetRoutes); // Las rutas de assets también cuelgan de /api/projects/:id/...
-app.use("/api/projects", exportRoutes); // La ruta de exportación es /api/projects/:id/export
+app.use("/api/projects", assetRoutes);
+app.use("/api/projects", exportRoutes);
+app.use("/api/projects", gitRoutes);
 
 app.listen(port, () => {
   console.log(`StoryEnginev2 escuchando en http://localhost:${port}`);
